@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=Asteroid Dodger
+Name=Dodger
 Exec=asteroid-dodger
 Icon=asteroid-dodger
 X-Asteroid-Needs-Repaint=true
