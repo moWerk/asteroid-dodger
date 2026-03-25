@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Timo Könnecke <github.com/eLtMosen>
+ * Copyright (C) 2026 - Timo Könnecke <github.com/moWerk>
  *
  * All rights reserved.
  *
@@ -52,7 +52,9 @@ Item {
     property bool showingNow: false
     property bool showingSurvive: false
     property bool isAutoFireActive: false
-
+    property bool playerDying: false
+    property real deathProgress: 0.0
+    
     // --- Difficulty & Persistence ---
     property string currentDifficulty: "Cadet Swerver"
     property bool   selectingDifficulty: true
@@ -321,7 +323,7 @@ Item {
             lastFrameTime = currentTime
             updateGame(deltaTime)
 
-            if (!paused) {
+            if (!paused && !playerDying) {
                 var rawX = accelerometer.reading.x
                 smoothedX = smoothedX + smoothingFactor * (rawX - smoothedX)
                 var deltaX = (smoothedX - baselineX) * -2
@@ -546,7 +548,32 @@ Item {
             }
         }
     }
-
+    
+    // Drives the DeathShader 0→1 over 520ms matching Tile.qml death timing
+    NumberAnimation {
+        id: deathAnim
+        target: root
+        property: "deathProgress"
+        from: 0.0
+        to: 1.0
+        duration: 1000
+        easing.type: Easing.InCubic
+        onStopped: {
+            gameOver = true
+            playerDying = false
+        }
+    }
+    
+    // Decelerates the field to a halt as the shader plays out
+    NumberAnimation {
+        id: deathScrollAnim
+        target: root
+        property: "scrollSpeed"
+        to: 0
+        duration: 1000
+        easing.type: Easing.OutCubic
+    }
+    
     Component {
         id: comboParticleComponent
         Text {
@@ -765,6 +792,7 @@ Item {
                     height: dimsFactor * 10
                     source: "file:///usr/share/asteroid-launcher/watchfaces-img/asteroid-logo.svg"
                     anchors.centerIn: parent
+                    opacity: playerDying ? Math.max(0, 1.0 - deathProgress * 1.4) : 1.0
 
                     SequentialAnimation on opacity {
                         running: (isGraceActive || isInvincibleActive) && !root.paused
@@ -786,6 +814,15 @@ Item {
                             player.rotation = 0
                         }
                     }
+                }
+                
+                DeathShader {
+                    id: deathShader
+                    width: player.width * 5
+                    height: player.height * 5
+                    anchors.centerIn: parent
+                    deathProgress: root.deathProgress
+                    ringColor: "#FF4400"
                 }
 
                 Shape {
@@ -1416,7 +1453,7 @@ Item {
                 radius: Math.round(dimsFactor * 3 * goScale)
                 anchors {
                     bottom: parent.bottom
-                    bottomMargin: dimsFactor * 6
+                    bottomMargin: dimsFactor * 8
                     horizontalCenter: parent.horizontalCenter
                 }
 
@@ -1675,11 +1712,14 @@ Item {
                 obj.x <= playerContainer.x + playerHitbox.width + dimsFactor * 5 &&
                 obj.y + obj.height >= playerContainer.y - dimsFactor * 5 &&
                 obj.y <= playerContainer.y + playerHitbox.height + dimsFactor * 5) {
-                if (obj.type === "asteroid" && isColliding(playerHitbox, obj) && !invincible) {
+                if (obj.type === "asteroid" && isColliding(playerHitbox, obj) && !invincible && !playerDying) {
                     shield--
                     if (shield <= 0) {
-                        gameOver = true
                         shield = 0
+                        playerDying = true
+                        deathProgress = 0.0
+                        deathAnim.restart()
+                        deathScrollAnim.restart()
                         flashOverlay.triggerFlash("red")
                         comboCount = 0
                         comboActive = false
@@ -2013,6 +2053,10 @@ Item {
         isSpeedBoostActive = false
         isShrinkActive = false
         isAutoFireActive = false
+        playerDying = false
+        deathProgress = 0.0
+        deathAnim.stop()
+        deathScrollAnim.stop()
         player.width = dimsFactor * 10
         player.height = dimsFactor * 10
         playerHitbox.width = dimsFactor * 14
