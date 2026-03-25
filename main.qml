@@ -200,6 +200,12 @@ Item {
         defaultValue: 1
     }
 
+    Binding {
+        target: DisplayBlanking
+        property: "preventBlanking"
+        value: !gameOver
+    }
+
     NonGraphicalFeedback {
         id: feedback
         event: "press"
@@ -328,18 +334,20 @@ Item {
                 playerContainer.x = Math.max(player.width / 2, Math.min(root.width - player.width / 2, newX))
             }
 
-            var currentFps = deltaTime > 0 ? 1 / deltaTime : 60
-            lastFps = currentFps
-            if (debugMode && currentTime - lastFpsUpdate >= 500) {
-                lastFpsUpdate = currentTime
-                fpsDisplay.text = "FPS: " + Math.round(currentFps)
-            }
-            if (debugMode && currentTime - lastGraphUpdate >= 500) {
-                lastGraphUpdate = currentTime
-                var tempHistory = fpsHistory.slice()
-                tempHistory.push(currentFps)
-                if (tempHistory.length > 10) tempHistory.shift()
-                fpsHistory = tempHistory
+            if (debugMode) {
+                var currentFps = deltaTime > 0 ? 1 / deltaTime : 60
+                lastFps = currentFps
+                if (currentTime - lastFpsUpdate >= 500) {
+                    lastFpsUpdate = currentTime
+                    fpsDisplay.text = "FPS: " + Math.round(currentFps)
+                }
+                if (currentTime - lastGraphUpdate >= 500) {
+                    lastGraphUpdate = currentTime
+                    var tempHistory = fpsHistory.slice()
+                    tempHistory.push(currentFps)
+                    if (tempHistory.length > 10) tempHistory.shift()
+                    fpsHistory = tempHistory
+                }
             }
         }
     }
@@ -1424,7 +1432,7 @@ Item {
 
         Accelerometer {
             id: accelerometer
-            active: true
+            active: gameTimer.running
         }
     }
 
@@ -2013,7 +2021,6 @@ Item {
     }
 
     function finishInitialization() {
-        DisplayBlanking.preventBlanking = true
         calibrationCountdownTimer.initializationDone = true
 
         // Preload a combo particle
