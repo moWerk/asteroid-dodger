@@ -1938,80 +1938,78 @@ Item {
             largeAsteroidPool[i].x = Math.random() * (root.width - largeAsteroidPool[i].width)
         }
 
-        // Delay spawn to ensure clear
-        var spawnTimer = Qt.createQmlObject('
-            import QtQuick 2.9
-            Timer {
-                interval: 50  // Short delay to let game loop clear
-                repeat: true
-                running: true
-                property int count: 0
-                onTriggered: {
-                    if (count < 3) {
-                        spawnObject({isAsteroid: true})
-                    }
-                    if (count < 2) {
-                        spawnLargeAsteroid()
-                    }
-                    count++
-                    if (count >= 3) {
-                        stop()
-                        destroy()
-                    }
-                }
-            }
-        ', root, "spawnTimer")
+        initialSpawnTimer.interval = 50
+        initialSpawnTimer.count = 0
+        initialSpawnTimer.start()
     }
 
+    Timer {
+        id: asteroidPoolTimer
+        interval: 10
+        repeat: true
+        property int index: 0
+        onTriggered: {
+            if (index < asteroidPoolSize) {
+                var obj = objectComponent.createObject(objectContainer)
+                obj.visible = false
+                obj.y = -obj.height
+                asteroidPool.push(obj)
+                index++
+            } else {
+                stop()
+                index = 0
+                initializeLargeAsteroids()
+            }
+        }
+    }
+
+    Timer {
+        id: largeAsteroidPoolTimer
+        interval: 10
+        repeat: true
+        property int index: 0
+        onTriggered: {
+            if (index < largeAsteroidPoolSize) {
+                var largeObj = largeAsteroidComponent.createObject(largeAsteroidContainer)
+                largeObj.visible = false
+                largeObj.y = -largeObj.height
+                largeAsteroidPool.push(largeObj)
+                index++
+            } else {
+                stop()
+                index = 0
+                finishInitialization()
+            }
+        }
+    }
+
+    Timer {
+        id: initialSpawnTimer
+        repeat: true
+        property int count: 0
+        onTriggered: {
+            if (count < 3) {
+                spawnObject({isAsteroid: true})
+            }
+            if (count < 2) {
+                spawnLargeAsteroid()
+            }
+            count++
+            if (count >= 3) {
+                stop()
+                count = 0
+            }
+        }
+    }
 
     function initializeGame() {
-        var asteroidPoolTimer = Qt.createQmlObject('
-            import QtQuick 2.9
-            Timer {
-                interval: 10  // Small chunks for responsiveness
-                repeat: true
-                running: true
-                property int index: 0
-                onTriggered: {
-                    if (index < asteroidPoolSize) {
-                        var obj = objectComponent.createObject(objectContainer)
-                        obj.visible = false
-                        obj.y = -obj.height
-                        asteroidPool.push(obj)
-                        index++
-                    } else {
-                        stop()
-                        destroy()
-                        initializeLargeAsteroids()
-                    }
-                }
-            }
-        ', root, "asteroidPoolTimer")
+        asteroidPoolTimer.index = 0
+        asteroidPoolTimer.start()
     }
 
     function initializeLargeAsteroids() {
-        var largeAsteroidPoolTimer = Qt.createQmlObject('
-            import QtQuick 2.9
-            Timer {
-                interval: 10
-                repeat: true
-                running: true
-                property int index: 0
-                onTriggered: {
-                    if (index < largeAsteroidPoolSize) {
-                        var largeObj = largeAsteroidComponent.createObject(largeAsteroidContainer)
-                        largeObj.visible = false
-                        largeObj.y = -largeObj.height
-                        largeAsteroidPool.push(largeObj)
-                        index++
-                    } else {
-                        stop()
-                        destroy()
-                        finishInitialization()
-                    }
-                }
-            }
-        ', root, "largeAsteroidPoolTimer")
+        largeAsteroidPoolTimer.index = 0
+        largeAsteroidPoolTimer.start()
     }
 
     function finishInitialization() {
@@ -2020,39 +2018,19 @@ Item {
 
         // Preload a combo particle
         var preloadParticle = comboParticleComponent.createObject(gameArea, {
-            "x": -dimsFactor * 10,  // Offscreen
+            "x": -dimsFactor * 10,
             "y": -dimsFactor * 10,
             "points": 1
         })
-        preloadParticle.destroy(100)  // Destroy after 100ms to cache it
+        preloadParticle.destroy(100)
 
         // Preload a power-up bar (mimics grace period)
         addPowerupBar("preload", 100, "#FF69B4", "#8B374F")
-        removePowerup("preload")  // Remove immediately after adding
+        removePowerup("preload")
 
-        // Initial spawn
-        var spawnTimer = Qt.createQmlObject('
-            import QtQuick 2.9
-            Timer {
-                interval: 200
-                repeat: true
-                running: true
-                property int count: 0
-                onTriggered: {
-                    if (count < 3) {
-                        spawnObject({isAsteroid: true})
-                    }
-                    if (count < 2) {
-                        spawnLargeAsteroid()
-                    }
-                    count++
-                    if (count >= 3) {
-                        stop()
-                        destroy()
-                    }
-                }
-            }
-        ', root, "spawnTimer")
+        initialSpawnTimer.interval = 200
+        initialSpawnTimer.count = 0
+        initialSpawnTimer.start()
     }
 
     // Start calibration and initialization immediately
