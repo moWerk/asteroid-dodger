@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 - Florent Revest <revestflo@gmail.com>
+ * Copyright (C) 2025 - Timo Könnecke <github.com/eLtMosen>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,15 @@
  */
 
 #include <asteroidapp.h>
+#include <QtQml>
+#include "DodgerStorage.h"
 
 int main(int argc, char *argv[])
 {
+    qmlRegisterSingletonType<DodgerStorage>(
+        "org.asteroid.dodger", 1, 0,
+        "DodgerStorage",
+        DodgerStorage::qmlInstance);
+
     return AsteroidApp::main(argc, argv);
 }
