@@ -31,12 +31,10 @@ Item {
     visible: true
 
     // --- Game Mechanics ---
-    property bool initializationComplete: false
     property bool calibrating: false
     property int calibrationTimer: 4
     property bool comboActive: false
     property int comboCount: 0
-    property real closePassThreshold: dimsFactor * 10
     property bool debugMode: false
     property bool gameOver: false
     property bool invincible: false
@@ -48,21 +46,18 @@ Item {
     property real lastDodgeTime: 0
     property int level: 1
     property bool paused: false
-    property bool playerHit: false
     property int score: 0
     property real scoreMultiplier: 1.0
-    property real scoreMultiplierElapsed: 0
     property int shield: balance.initialShield
     property bool showingNow: false
     property bool showingSurvive: false
-    property bool isAutoFireActive: false  // AutoFire active state
-    property real autoFireElapsed: 0       // Track AutoFire duration
+    property bool isAutoFireActive: false
 
     // --- Object Spawning and Pools ---
     property var activeLaser: null
     property var activeParticles: []
     property var activePowerups: []
-    property var activeShots: []  // New: Track AutoFire shots
+    property var activeShots: []
     property int asteroidCount: 0
     property real asteroidDensity: balance.initialAsteroidDensity + (level - 1) * balance.asteroidDensityPerLevel
     property var asteroidPool: []
@@ -73,7 +68,6 @@ Item {
     property int largeAsteroidPoolSize: 10
     property real lastAsteroidSpawn: 0
     property real lastLargeAsteroidSpawn: 0
-    property real lastLaserSwipeSpawn: 0
     property real lastObjectSpawn: 0
     property int spawnCooldown: Math.max(balance.minSpawnCooldown, balance.initialSpawnCooldown - (level - 1) * balance.spawnCooldownPerLevel)
 
@@ -88,6 +82,18 @@ Item {
     property real preSlowSpeed: 0
     property real savedScrollSpeed: 0
     property real scrollSpeed: balance.initialScrollSpeed
+
+    // Spawn config built once at root level — avoids per-tick array allocation in updateGame
+    property var powerupTypes: [
+        { type: "shield",          weight: balance.weightShield },
+        { type: "invincibility",   weight: balance.weightInvincibility },
+        { type: "speedBoost",      weight: balance.weightSpeedBoost },
+        { type: "scoreMultiplier", weight: balance.weightScoreMultiplier },
+        { type: "slowMo",          weight: balance.weightSlowMo },
+        { type: "shrink",          weight: balance.weightShrink },
+        { type: "laserSwipe",      weight: balance.weightLaserSwipe },
+        { type: "autoFire",        weight: balance.weightAutoFire },
+    ]
 
     // ── Game Balance ─────────────────────────────────────────────────────────
     // Single source of truth for all gameplay tuning. Change values here only.
@@ -357,7 +363,6 @@ Item {
         repeat: false
         onTriggered: {
             scoreMultiplier = 1.0
-            scoreMultiplierElapsed = 0
             removePowerup("scoreMultiplier")
         }
         onRunningChanged: {
@@ -420,7 +425,7 @@ Item {
         interval: 1000
         running: calibrating
         repeat: true
-        property bool initializationDone: false  // Track loading completion
+        property bool initializationDone: false
         onTriggered: {
             calibrationTimer--
             if (calibrationTimer <= 0 && initializationDone) {
@@ -509,37 +514,37 @@ Item {
             text: "+" + points
             color: {
                 if (points <= 10) return "#00CC00"
-                    if (points <= 20) {
-                        var t1 = (points - 10) / 10
-                        var r = Math.round(0x00 + t1 * (0xFF - 0x00))
-                        var g = Math.round(0xCC + t1 * (0xD7 - 0xCC))
-                        var b = Math.round(0x00 + t1 * (0x00 - 0x00))
-                        return Qt.rgba(r / 255, g / 255, b / 255, 1)
-                    }
-                    if (points <= 40) {
-                        var t2 = (points - 20) / 20
-                        var r = Math.round(0xFF + t2 * (0xFF - 0xFF))
-                        var g = Math.round(0xD7 + t2 * (0x69 - 0xD7))
-                        var b = Math.round(0x00 + t2 * (0xB4 - 0x00))
-                        return Qt.rgba(r / 255, g / 255, b / 255, 1)
-                    }
-                    return "#FF69B4"
+                if (points <= 20) {
+                    var t1 = (points - 10) / 10
+                    var r = Math.round(0x00 + t1 * (0xFF - 0x00))
+                    var g = Math.round(0xCC + t1 * (0xD7 - 0xCC))
+                    var b = Math.round(0x00 + t1 * (0x00 - 0x00))
+                    return Qt.rgba(r / 255, g / 255, b / 255, 1)
+                }
+                if (points <= 40) {
+                    var t2 = (points - 20) / 20
+                    var r = Math.round(0xFF + t2 * (0xFF - 0xFF))
+                    var g = Math.round(0xD7 + t2 * (0x69 - 0xD7))
+                    var b = Math.round(0x00 + t2 * (0xB4 - 0x00))
+                    return Qt.rgba(r / 255, g / 255, b / 255, 1)
+                }
+                return "#FF69B4"
             }
             font.pixelSize: {
                 if (points <= 10) return dimsFactor * 4
-                    if (points <= 20) {
-                        var t1 = (points - 10) / 10
-                        return (dimsFactor * 4 + t1 * (dimsFactor * 5 - dimsFactor * 4))
-                    }
-                    if (points <= 40) {
-                        var t2 = (points - 20) / 20
-                        return (dimsFactor * 5 + t2 * (dimsFactor * 6 - dimsFactor * 5))
-                    }
-                    if (points <= 100) {
-                        var t3 = (points - 40) / 60
-                        return (dimsFactor * 6 + t3 * (dimsFactor * 7 - dimsFactor * 6))
-                    }
-                    return dimsFactor * 7
+                if (points <= 20) {
+                    var t1 = (points - 10) / 10
+                    return (dimsFactor * 4 + t1 * (dimsFactor * 5 - dimsFactor * 4))
+                }
+                if (points <= 40) {
+                    var t2 = (points - 20) / 20
+                    return (dimsFactor * 5 + t2 * (dimsFactor * 6 - dimsFactor * 5))
+                }
+                if (points <= 100) {
+                    var t3 = (points - 40) / 60
+                    return (dimsFactor * 6 + t3 * (dimsFactor * 7 - dimsFactor * 6))
+                }
+                return dimsFactor * 7
             }
             z: 3
             opacity: 1
@@ -608,7 +613,7 @@ Item {
             height: dimsFactor * 1
             color: "red"
             x: 0
-            y: playerContainer ? playerContainer.y : root.height * 0.75  // Start at player position
+            y: playerContainer ? playerContainer.y : root.height * 0.75
             z: 2
             visible: true
 
@@ -618,7 +623,7 @@ Item {
                 property: "y"
                 from: laserRect.y
                 to: -laserRect.height
-                duration: 1000  // 1 second sweep
+                duration: 1000
                 running: true
                 onStopped: {
                     if (root.activeLaser === laserRect) {
@@ -670,9 +675,9 @@ Item {
 
             function triggerFlash(color) {
                 flashColor = color
-                opacity = 0  // Ensure starting point
-                flashAnimation.stop()  // Fully stop any running animation
-                flashAnimation.start()  // Start fresh
+                opacity = 0
+                flashAnimation.stop()
+                flashAnimation.start()
             }
 
             NumberAnimation {
@@ -813,7 +818,6 @@ Item {
                         height: parent.height
                         radius: dimsFactor * 1
                         color: "#45220A"
-                        opacity: 1.0
                     }
 
                     Rectangle {
@@ -822,7 +826,6 @@ Item {
                         height: parent.height
                         color: "#FFD700"
                         radius: dimsFactor * 1
-                        opacity: 1.0
                     }
                 }
 
@@ -929,7 +932,7 @@ Item {
                             property: "width"
                             from: comboMeter.maxWidth
                             to: 0
-                            duration: 1950
+                            duration: balance.comboWindowMs - 50
                             easing.type: Easing.Linear
                         }
                         onStopped: {
@@ -960,7 +963,7 @@ Item {
                 visible: calibrating
 
                 Text {
-                    text: "v1.5\nAsteroid Dodger"
+                    text: "v2.0\nAsteroid Dodger"
                     color: "#dddddd"
                     font {
                         family: "Fyodor"
@@ -1007,21 +1010,6 @@ Item {
                         font.pixelSize: dimsFactor * 9
                         horizontalAlignment: Text.AlignHCenter
                         anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: calibrating
-                    onClicked: {
-                        baselineX = accelerometer.reading.x
-                        calibrating = false
-                        calibrationCountdownTimer.stop()
-                        showingNow = true
-                        feedback.play()
-                        nowTransition.start()
-                        introTimer.phase = 1
-                        introTimer.start()
                     }
                 }
             }
@@ -1279,7 +1267,6 @@ Item {
                     var b = Math.round((0x3d + t * (0x9b - 0x3d)) * 0.42)
                     return Qt.rgba(r / 255, g / 255, b / 255, 1)
                 }
-                opacity: 1.0
                 radius: dimsFactor * 50
                 visible: false
             }
@@ -1344,14 +1331,14 @@ Item {
                     visible: type !== "asteroid"
                     text: "!"
                     color: {
-                        if (type === "invincibility")  return "#FF69B4"
-                            if (type === "speedBoost")     return "#FFFF00"
-                                if (type === "scoreMultiplier") return "#00CC00"
-                                    if (type === "shrink")         return "#FFA500"
-                                        if (type === "slowMo")         return "#00FFFF"
-                                            if (type === "laserSwipe")     return "red"
-                                                if (type === "autoFire")       return "#800080"
-                                                    return "#0087ff"
+                        if (type === "invincibility")   return "#FF69B4"
+                        if (type === "speedBoost")      return "#FFFF00"
+                        if (type === "scoreMultiplier") return "#00CC00"
+                        if (type === "shrink")          return "#FFA500"
+                        if (type === "slowMo")          return "#00FFFF"
+                        if (type === "laserSwipe")      return "red"
+                        if (type === "autoFire")        return "#800080"
+                        return "#0087ff"
                     }
                     font {
                         pixelSize: dimsFactor * 6
@@ -1380,7 +1367,6 @@ Item {
                 existing.bar.startTimer()
                 return
             }
-            // If bar is destroyed or unparented, remove stale entry
             activePowerups.splice(existingIndex, 1)
         }
         var bar = progressBarComponent.createObject(powerupBars, {
@@ -1419,18 +1405,18 @@ Item {
         var adjustedScrollSpeed = scrollSpeed * deltaTime * 60
         var largeAsteroidSpeed = adjustedScrollSpeed / 3
         var currentTime = Date.now()
-        var effectiveSpawnCooldown = isSlowMoActive ? spawnCooldown * 2 : spawnCooldown  // Double during slowMo
-        var coarseRange = root.height  // Only check objects within screen height
+        var effectiveSpawnCooldown = isSlowMoActive ? spawnCooldown * 2 : spawnCooldown
+        var coarseRange = root.height
 
         var playerCenterX = playerContainer.x + playerHitbox.x + playerHitbox.width / 2
         var playerCenterY = playerContainer.y + playerHitbox.y + playerHitbox.height / 2
         var comboCenterX = playerContainer.x + comboHitbox.x + comboHitbox.width / 2
         var comboCenterY = playerContainer.y + comboHitbox.y + comboHitbox.height / 2
         var maxDistanceSquared = (playerHitbox.width + dimsFactor * 5) * (playerHitbox.width + dimsFactor * 5)
-        var comboDetectionSize = dimsFactor * 12  // New variable for detection area
+        var comboDetectionSize = dimsFactor * 12
         var comboDistanceSquared = (comboDetectionSize + dimsFactor * 5) * (comboDetectionSize + dimsFactor * 5)
 
-        // Update shots efficiently
+        // Update shots
         for (var i = activeShots.length - 1; i >= 0; i--) {
             var shot = activeShots[i]
             if (shot) {
@@ -1461,7 +1447,7 @@ Item {
                 obj.visible = false
                 continue
             }
-            if (obj.y + obj.height < -coarseRange || obj.y > root.height + coarseRange) continue  // Skip far objects
+            if (obj.y + obj.height < -coarseRange || obj.y > root.height + coarseRange) continue
 
             var objCenterX = obj.x + obj.width / 2
             var objCenterY = obj.y + obj.height / 2
@@ -1526,7 +1512,6 @@ Item {
                 }
                 if (obj.type === "scoreMultiplier" && isColliding(playerHitbox, obj)) {
                     scoreMultiplier = balance.scoreMultiplierValue
-                    scoreMultiplierElapsed = 0
                     scoreMultiplierTimer.restart()
                     flashOverlay.triggerFlash("#00CC00")
                     addPowerupBar("scoreMultiplier", balance.scoreMultiplierMs, "#00CC00", "#006600")
@@ -1582,9 +1567,9 @@ Item {
                     obj.visible = false
                     continue
                 }
-                }
+            }
 
-                if (obj.type === "asteroid" && (obj.y + obj.height / 2) > playerCenterY && !obj.passed) {
+            if (obj.type === "asteroid" && (obj.y + obj.height / 2) > playerCenterY && !obj.passed) {
                 asteroidCount++
                 obj.passed = true
                 if (obj.x + obj.width >= playerContainer.x - comboDetectionSize / 2 - dimsFactor * 5 &&
@@ -1598,7 +1583,7 @@ Item {
                     var basePoints = isCombo ? 2 : 1
 
                     if (isCombo) {
-                        if (currentTime - lastDodgeTime <= 2000) {
+                        if (currentTime - lastDodgeTime <= balance.comboWindowMs) {
                             comboCount++
                         } else {
                             comboCount = 1
@@ -1633,7 +1618,7 @@ Item {
             var shot = activeShots[s]
             if (!shot || !shot.visible) continue
 
-            var buffer = dimsFactor * 2.5  // Total width ~6 (1 + 2.5 left + 2.5 right)
+            var buffer = dimsFactor * 2.5
             for (var j = asteroidPool.length - 1; j >= 0; j--) {
                 var obj = asteroidPool[j]
                 if (obj && obj.visible) {
@@ -1666,16 +1651,16 @@ Item {
         // Laser swipe effect
         if (activeLaser && activeLaser.visible) {
             for (i = asteroidPool.length - 1; i >= 0; i--) {
-                var obj = asteroidPool[i]
+                obj = asteroidPool[i]
                 if (obj && obj.visible && obj !== activeLaser &&
                     obj.y <= activeLaser.y + activeLaser.height && obj.y + obj.height >= activeLaser.y &&
                     obj.x + obj.width >= 0 && obj.x <= root.width) {
                     if (obj.type === "asteroid") {
                         score += 10 * scoreMultiplier
-                        var objX = obj.x
-                        var objY = obj.y
+                        objX = obj.x
+                        objY = obj.y
                         obj.visible = false
-                        var particle = comboParticleComponent.createObject(gameArea, {
+                        particle = comboParticleComponent.createObject(gameArea, {
                             "x": objX,
                             "y": objY,
                             "points": 10 * scoreMultiplier
@@ -1687,10 +1672,6 @@ Item {
             }
         }
 
-        // Update timers
-        if (scoreMultiplierTimer.running) scoreMultiplierElapsed += deltaTime
-        if (isAutoFireActive) autoFireElapsed += deltaTime
-
         // Spawning logic
         var powerupBaseChance = asteroidDensity * balance.powerupDensityFactor
         if (!paused && currentTime - lastLargeAsteroidSpawn >= effectiveSpawnCooldown && Math.random() < largeAsteroidDensity / 3) {
@@ -1701,16 +1682,6 @@ Item {
             spawnObject("asteroid")
             lastAsteroidSpawn = currentTime
         }
-        var powerupTypes = [
-            { type: "shield",          weight: balance.weightShield },
-            { type: "invincibility",   weight: balance.weightInvincibility },
-            { type: "speedBoost",      weight: balance.weightSpeedBoost },
-            { type: "scoreMultiplier", weight: balance.weightScoreMultiplier },
-            { type: "slowMo",          weight: balance.weightSlowMo },
-            { type: "shrink",          weight: balance.weightShrink },
-            { type: "laserSwipe",      weight: balance.weightLaserSwipe },
-            { type: "autoFire",        weight: balance.weightAutoFire },
-        ]
         for (var p = 0; p < powerupTypes.length; p++) {
             if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * powerupTypes[p].weight) {
                 spawnObject(powerupTypes[p].type)
@@ -1742,8 +1713,8 @@ Item {
                 obj.y = -obj.height - (Math.random() * dimsFactor * 28)
                 obj.visible = true
                 if (obj.passed) obj.passed = false
-                    if (obj.dodged) obj.dodged = false
-                        return
+                if (obj.dodged) obj.dodged = false
+                return
             }
         }
     }
@@ -1781,7 +1752,6 @@ Item {
         // asteroidDensity is a binding on level — resetting level above is sufficient
         gameOver = false
         paused = false
-        playerHit = false
         invincible = false
         playerSpeed = basePlayerSpeed
         calibrating = false
@@ -1791,7 +1761,6 @@ Item {
         comboActive = false
         lastDodgeTime = 0
         scoreMultiplier = 1.0
-        scoreMultiplierElapsed = 0
         preSlowSpeed = 0
         isSlowMoActive = false
         isSpeedBoostActive = false
@@ -1802,8 +1771,10 @@ Item {
         playerHitbox.width = dimsFactor * 14
         playerHitbox.height = dimsFactor * 14
         clearPowerupBars()
+        nowTransition.stop()
         nowText.font.pixelSize = dimsFactor * 13
         nowText.opacity = 0
+        surviveTransition.stop()
         surviveText.font.pixelSize = dimsFactor * 13
         surviveText.opacity = 0
         playerContainer.x = root.width / 2 - player.width / 2
@@ -1833,7 +1804,7 @@ Item {
         // Clear asteroid pool and move off-screen
         for (i = 0; i < asteroidPool.length; i++) {
             asteroidPool[i].visible = false
-            asteroidPool[i].y = -asteroidPool[i].height - dimsFactor * 28  // Force off-screen
+            asteroidPool[i].y = -asteroidPool[i].height - dimsFactor * 28
             asteroidPool[i].x = Math.random() * (root.width - asteroidPool[i].width)
             asteroidPool[i].passed = false
             asteroidPool[i].dodged = false
@@ -1842,7 +1813,7 @@ Item {
         // Clear large asteroid pool and move off-screen
         for (i = 0; i < largeAsteroidPool.length; i++) {
             largeAsteroidPool[i].visible = false
-            largeAsteroidPool[i].y = -largeAsteroidPool[i].height - dimsFactor * 28  // Force off-screen
+            largeAsteroidPool[i].y = -largeAsteroidPool[i].height - dimsFactor * 28
             largeAsteroidPool[i].x = Math.random() * (root.width - largeAsteroidPool[i].width)
         }
 
@@ -1942,7 +1913,7 @@ Item {
 
     // Start calibration and initialization immediately
     Component.onCompleted: {
-        calibrating = true  // Show calibration screen instantly
-        initializeGame()    // Start async loading
+        calibrating = true
+        initializeGame()
     }
 }
