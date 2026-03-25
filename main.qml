@@ -211,55 +211,6 @@ Item {
         event: "press"
     }
 
-    Item {
-        id: preloader
-        anchors.fill: parent
-        visible: false  // Hidden, only for preloading
-
-        Rectangle {
-            id: preloadFlash
-            anchors.fill: parent
-            SequentialAnimation {
-                id: preloadFlashAnimation
-                NumberAnimation {
-                    target: preloadFlash
-                    property: "opacity"
-                    from: 0.5
-                    to: 0
-                    duration: 500
-                    easing.type: Easing.OutQuad
-                }
-                onStopped: {
-                    preloadFlash.opacity = 0
-                }
-            }
-        }
-
-        Image {
-            id: preloadPlayer
-            width: dimsFactor * 10
-            height: dimsFactor * 10
-            source: "file:///usr/share/asteroid-launcher/watchfaces-img/asteroid-logo.svg"
-            SequentialAnimation on opacity {
-                NumberAnimation { from: 1.0; to: 0.2; duration: 500; easing.type: Easing.InOutSine }
-                NumberAnimation { from: 0.2; to: 1.0; duration: 500; easing.type: Easing.InOutSine }
-                onStopped: {
-                    preloadPlayer.opacity = 1.0
-                }
-            }
-        }
-
-        NonGraphicalFeedback {
-            id: preloadFeedback
-            event: "short"
-        }
-
-        Component.onCompleted: {
-            preloadFlashAnimation.start()
-            preloadFeedback.play()
-        }
-    }
-
     Component {
         id: progressBarComponent
         Item {
@@ -364,7 +315,7 @@ Item {
         }
         onRunningChanged: {
             if (running && !paused) {
-                addPowerupBar("grace", 2000, "#FF69B4", "#8B374F")
+                addPowerupBar("grace", balance.gracePeriodMs, "#FF69B4", "#8B374F")
             }
         }
     }
@@ -557,37 +508,37 @@ Item {
             text: "+" + points
             color: {
                 if (points <= 10) return "#00CC00"
-                if (points <= 20) {
-                    var t = (points - 10) / 10
-                    var r = Math.round(0x00 + t * (0xFF - 0x00))
-                    var g = Math.round(0xCC + t * (0xD7 - 0xCC))
-                    var b = Math.round(0x00 + t * (0x00 - 0x00))
-                    return Qt.rgba(r / 255, g / 255, b / 255, 1)
-                }
-                if (points <= 40) {
-                    var t = (points - 20) / 20
-                    var r = Math.round(0xFF + t * (0xFF - 0xFF))
-                    var g = Math.round(0xD7 + t * (0x69 - 0xD7))
-                    var b = Math.round(0x00 + t * (0xB4 - 0x00))
-                    return Qt.rgba(r / 255, g / 255, b / 255, 1)
-                }
-                return "#FF69B4"
+                    if (points <= 20) {
+                        var t1 = (points - 10) / 10
+                        var r = Math.round(0x00 + t1 * (0xFF - 0x00))
+                        var g = Math.round(0xCC + t1 * (0xD7 - 0xCC))
+                        var b = Math.round(0x00 + t1 * (0x00 - 0x00))
+                        return Qt.rgba(r / 255, g / 255, b / 255, 1)
+                    }
+                    if (points <= 40) {
+                        var t2 = (points - 20) / 20
+                        var r = Math.round(0xFF + t2 * (0xFF - 0xFF))
+                        var g = Math.round(0xD7 + t2 * (0x69 - 0xD7))
+                        var b = Math.round(0x00 + t2 * (0xB4 - 0x00))
+                        return Qt.rgba(r / 255, g / 255, b / 255, 1)
+                    }
+                    return "#FF69B4"
             }
             font.pixelSize: {
                 if (points <= 10) return dimsFactor * 4
-                if (points <= 20) {
-                    var t = (points - 10) / 10
-                    return (dimsFactor * 4 + t * (dimsFactor * 5 - dimsFactor * 4))
-                }
-                if (points <= 40) {
-                    var t = (points - 20) / 20
-                    return (dimsFactor * 5 + t * (dimsFactor * 6 - dimsFactor * 5))
-                }
-                if (points <= 100) {
-                    var t = (points - 40) / 60
-                    return (dimsFactor * 6 + t * (dimsFactor * 7 - dimsFactor * 6))
-                }
-                return dimsFactor * 7
+                    if (points <= 20) {
+                        var t1 = (points - 10) / 10
+                        return (dimsFactor * 4 + t1 * (dimsFactor * 5 - dimsFactor * 4))
+                    }
+                    if (points <= 40) {
+                        var t2 = (points - 20) / 20
+                        return (dimsFactor * 5 + t2 * (dimsFactor * 6 - dimsFactor * 5))
+                    }
+                    if (points <= 100) {
+                        var t3 = (points - 40) / 60
+                        return (dimsFactor * 6 + t3 * (dimsFactor * 7 - dimsFactor * 6))
+                    }
+                    return dimsFactor * 7
             }
             z: 3
             opacity: 1
@@ -918,16 +869,14 @@ Item {
                     height: parent.height
                     radius: dimsFactor * 1
                     color: "#002346"
-                    opacity: 1.0
                 }
 
                 Rectangle {
                     id: shieldFill
-                    width: (shield / 10) * parent.width
+                    width: (shield / balance.maxShield) * parent.width
                     height: parent.height
                     color: "#0087FF"
                     radius: dimsFactor * 1
-                    opacity: 1.0
                 }
             }
 
@@ -936,7 +885,7 @@ Item {
                 text: shield === 1 ? "❤️" : shield
                 color: shield === 1 ? "red" : "#FFFFFF"
                 font {
-                    pixelSize: shield === 1 ? dimsFactor * 8 : dimsFactor * 8  // Static size
+                    pixelSize: dimsFactor * 8
                     family: "Fyodor"
                 }
                 anchors {
