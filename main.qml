@@ -112,10 +112,10 @@ Item {
     property var difficultyPresets: ({
         "Cadet Swerver": {
             initialScrollSpeed:      1.6,
-            scrollSpeedPerLevel:     0.05,
+            scrollSpeedPerLevel:     0.06,
             initialAsteroidDensity:  0.20,
             asteroidDensityPerLevel: 0.10,
-            powerupDensityFactor:    0.001,
+            powerupDensityFactor:    0.002,
             weightInvincibility:     0.4
         },
         "Captain Slipstreamer": {
@@ -123,7 +123,7 @@ Item {
             scrollSpeedPerLevel:     0.07,
             initialAsteroidDensity:  0.28,
             asteroidDensityPerLevel: 0.14,
-            powerupDensityFactor:    0.0008,
+            powerupDensityFactor:    0.0016,
             weightInvincibility:     0.4
         },
         "Commander Stardust": {
@@ -131,15 +131,15 @@ Item {
             scrollSpeedPerLevel:     0.09,
             initialAsteroidDensity:  0.36,
             asteroidDensityPerLevel: 0.18,
-            powerupDensityFactor:    0.0006,
+            powerupDensityFactor:    0.0014,
             weightInvincibility:     0.25
         },
         "Major Roadkill": {
-            initialScrollSpeed:      2.5,
-            scrollSpeedPerLevel:     0.11,
+            initialScrollSpeed:      2.6,
+            scrollSpeedPerLevel:     0.1,
             initialAsteroidDensity:  0.44,
             asteroidDensityPerLevel: 0.22,
-            powerupDensityFactor:    0.0005,
+            powerupDensityFactor:    0.0012,
             weightInvincibility:     0.0
         }
     })
@@ -1924,12 +1924,44 @@ Item {
                 if (obj.type !== type) {
                     obj.type = type
                 }
-                obj.x = Math.random() * (root.width - obj.width)
-                obj.y = -obj.height - (Math.random() * dimsFactor * 28)
-                obj.visible = true
-                if (obj.passed) obj.passed = false
-                if (obj.dodged) obj.dodged = false
-                return
+                
+                // For power-ups, find an x position with clearance from
+                // all visible asteroids. Try up to 8 candidates before
+                // giving up on this tick — better to miss a spawn than
+                // place a power-up inside an asteroid.
+                var chosenX = -1
+                var clearance = dimsFactor * 7
+                var maxTries = type === "asteroid" ? 1 : 8
+                for (var attempt = 0; attempt < maxTries; attempt++) {
+                    var candidateX = Math.random() * (root.width - obj.width)
+                    if (type === "asteroid") {
+                        chosenX = candidateX
+                        break
+                    }
+                    var clear = true
+                    for (var k = 0; k < asteroidPool.length; k++) {
+                        var ast = asteroidPool[k]
+                        if (ast.visible && ast.type === "asteroid") {
+                            if (Math.abs((candidateX + obj.width / 2) - (ast.x + ast.width / 2)) < clearance) {
+                                clear = false
+                                break
+                            }
+                        }
+                    }
+                    if (clear) {
+                        chosenX = candidateX
+                        break
+                    }
+                }
+                // No clear position found this tick — skip the spawn entirely
+                if (chosenX < 0) return
+                    
+                    obj.x = chosenX
+                    obj.y = -obj.height - (Math.random() * dimsFactor * 28)
+                    obj.visible = true
+                    if (obj.passed) obj.passed = false
+                        if (obj.dodged) obj.dodged = false
+                            return
             }
         }
     }
