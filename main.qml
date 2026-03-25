@@ -262,7 +262,6 @@ Item {
             property string fillColor: "#FFD700"
             property string bgColor: "#45220A"
             property int duration: 0
-            property var timer: null
             width: dimsFactor * 28
             height: dimsFactor * 2
 
@@ -271,7 +270,6 @@ Item {
                 height: parent.height
                 radius: dimsFactor * 1
                 color: bgColor
-                opacity: 1.0
             }
 
             Rectangle {
@@ -280,36 +278,25 @@ Item {
                 height: parent.height
                 color: fillColor
                 radius: dimsFactor * 1
-                opacity: 1.0
+            }
+
+            Timer {
+                id: progressTimer
+                interval: 16
+                repeat: true
+                property real elapsed: 0
+                onTriggered: {
+                    elapsed += interval
+                    progress = Math.max(0, 1 - elapsed / duration)
+                    if (progress <= 0) {
+                        progressBar.destroy()
+                    }
+                }
             }
 
             function startTimer() {
-                if (timer) {
-                    timer.destroy()
-                }
-                timer = Qt.createQmlObject(`
-                    import QtQuick 2.9
-                    Timer {
-                        interval: 16
-                        running: true
-                        repeat: true
-                        property real elapsed: 0
-                        onTriggered: {
-                            elapsed += interval
-                            progress = Math.max(0, 1 - elapsed / duration)
-                            if (progress <= 0) {
-                                progressBar.destroy()
-                            }
-                        }
-                    }
-                `, progressBar, "powerupTimer")
-            }
-
-            onProgressChanged: {
-                if (progress <= 0 && timer) {
-                    timer.destroy()
-                    progressBar.destroy()
-                }
+                progressTimer.elapsed = 0
+                progressTimer.restart()
             }
         }
     }
