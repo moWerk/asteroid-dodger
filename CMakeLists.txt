@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.6.0)
 
 project(asteroid-dodger
-	VERSION 1.0
-	DESCRIPTION "A thrilling survival game for AsteroidOS where you tilt your watch to surf through an ever-denser asteroid field")
+    VERSION 2.0
+    DESCRIPTION "A thrilling survival game for AsteroidOS where you tilt your watch to surf through an ever-denser asteroid field")
 
 find_package(ECM REQUIRED NO_MODULE)
 find_package(AsteroidApp REQUIRED)
@@ -15,7 +15,10 @@ include(ECMFindQmlModule)
 include(AsteroidCMakeSettings)
 include(AsteroidTranslations)
 
-add_executable(asteroid-dodger main.cpp resources.qrc)
+add_executable(asteroid-dodger
+    main.cpp
+    DodgerStorage.cpp
+    resources.qrc)
 
 target_link_libraries(asteroid-dodger PRIVATE
     AsteroidApp)
