@@ -20,9 +20,9 @@
 import QtQuick 2.9
 import QtSensors 5.15
 import Nemo.Ngf 1.0
-import Nemo.Configuration 1.0
 import QtQuick.Shapes 1.15
 import org.asteroid.controls 1.0
+import org.asteroid.dodger 1.0
 import Nemo.KeepAlive 1.1
 
 Item {
@@ -32,9 +32,9 @@ Item {
 
     // --- Game Mechanics ---
     property bool calibrating: false
-    property int calibrationTimer: 4
+    property int  calibrationTimer: 2
     property bool comboActive: false
-    property int comboCount: 0
+    property int  comboCount: 0
     property bool debugMode: false
     property bool gameOver: false
     property bool invincible: false
@@ -44,46 +44,56 @@ Item {
     property bool isSlowMoActive: false
     property bool isSpeedBoostActive: false
     property real lastDodgeTime: 0
-    property int level: 1
+    property int  level: 1
     property bool paused: false
-    property int score: 0
+    property int  score: 0
     property real scoreMultiplier: 1.0
-    property int shield: balance.initialShield
+    property int  shield: balance.initialShield
     property bool showingNow: false
     property bool showingSurvive: false
     property bool isAutoFireActive: false
 
+    // --- Difficulty & Persistence ---
+    property string currentDifficulty: "Cadet Swerver"
+    property bool   selectingDifficulty: true
+    // true whenever we are on any pre-game screen (not yet in active play)
+    readonly property bool inPreGame: selectingDifficulty || calibrating || showingNow || showingSurvive
+
+    // --- Game Over Screen Model ---
+    property var goModel: []
+
     // --- Object Spawning and Pools ---
-    property var activeLaser: null
-    property var activeParticles: []
-    property var activePowerups: []
-    property var activeShots: []
-    property int asteroidCount: 0
+    property var  activeLaser: null
+    property var  activeParticles: []
+    property var  activePowerups: []
+    property var  activeShots: []
+    property int  asteroidCount: 0
     property real asteroidDensity: balance.initialAsteroidDensity + (level - 1) * balance.asteroidDensityPerLevel
-    property var asteroidPool: []
-    property int asteroidPoolSize: 40
-    property int asteroidsPerLevel: balance.asteroidsPerLevel
+    property var  asteroidPool: []
+    property int  asteroidPoolSize: 40
+    property int  asteroidsPerLevel: balance.asteroidsPerLevel
     property real largeAsteroidDensity: asteroidDensity / 3
-    property var largeAsteroidPool: []
-    property int largeAsteroidPoolSize: 10
+    property var  largeAsteroidPool: []
+    property int  largeAsteroidPoolSize: 10
     property real lastAsteroidSpawn: 0
     property real lastLargeAsteroidSpawn: 0
     property real lastObjectSpawn: 0
-    property int spawnCooldown: Math.max(balance.minSpawnCooldown, balance.initialSpawnCooldown - (level - 1) * balance.spawnCooldownPerLevel)
+    property int  spawnCooldown: Math.max(balance.minSpawnCooldown, balance.initialSpawnCooldown - (level - 1) * balance.spawnCooldownPerLevel)
 
     // --- Visual and Timing Settings ---
-    property real baselineX: 0
-    property real dimsFactor: Dims.l(100) / 100
-    property real goScale: 1.2
+    property real   baselineX: 0
+    property real   dimsFactor: Dims.l(100) / 100
+    property real   goScale: 1.2
     property string flashColor: ""
-    property real lastFrameTime: 0
-    property real playerSpeed: balance.playerSensitivity
-    property real basePlayerSpeed: balance.playerSensitivity
-    property real preSlowSpeed: 0
-    property real savedScrollSpeed: 0
-    property real scrollSpeed: balance.initialScrollSpeed
+    property real   lastFrameTime: 0
+    property real   playerSpeed: balance.playerSensitivity
+    property real   basePlayerSpeed: balance.playerSensitivity
+    property real   preSlowSpeed: 0
+    property real   savedScrollSpeed: 0
+    property real   scrollSpeed: balance.initialScrollSpeed
 
-    // Spawn config built once at root level — avoids per-tick array allocation in updateGame
+    // Spawn config — built once at root level, rebuilt by applyDifficulty
+    // when weightInvincibility changes between difficulties.
     property var powerupTypes: [
         { type: "shield",          weight: balance.weightShield },
         { type: "invincibility",   weight: balance.weightInvincibility },
@@ -95,69 +105,92 @@ Item {
         { type: "autoFire",        weight: balance.weightAutoFire },
     ]
 
+    // ── Difficulty Presets ────────────────────────────────────────────────────
+    // Cadet = current baseline. Each step raises scroll speed, asteroid density
+    // and density-per-level linearly. Roadkill additionally has no invincibility
+    // pickup (weightInvincibility: 0).
+    property var difficultyPresets: ({
+        "Cadet Swerver": {
+            initialScrollSpeed:      1.6,
+            scrollSpeedPerLevel:     0.05,
+            initialAsteroidDensity:  0.20,
+            asteroidDensityPerLevel: 0.10,
+            powerupDensityFactor:    0.001,
+            weightInvincibility:     0.4
+        },
+        "Captain Slipstreamer": {
+            initialScrollSpeed:      1.9,
+            scrollSpeedPerLevel:     0.07,
+            initialAsteroidDensity:  0.28,
+            asteroidDensityPerLevel: 0.14,
+            powerupDensityFactor:    0.0008,
+            weightInvincibility:     0.4
+        },
+        "Commander Stardust": {
+            initialScrollSpeed:      2.2,
+            scrollSpeedPerLevel:     0.09,
+            initialAsteroidDensity:  0.36,
+            asteroidDensityPerLevel: 0.18,
+            powerupDensityFactor:    0.0006,
+            weightInvincibility:     0.25
+        },
+        "Major Roadkill": {
+            initialScrollSpeed:      2.5,
+            scrollSpeedPerLevel:     0.11,
+            initialAsteroidDensity:  0.44,
+            asteroidDensityPerLevel: 0.22,
+            powerupDensityFactor:    0.0005,
+            weightInvincibility:     0.0
+        }
+    })
+
     // ── Game Balance ─────────────────────────────────────────────────────────
-    // Single source of truth for all gameplay tuning. Change values here only.
+    // Single source of truth for all gameplay tuning.
+    // The 6 non-readonly properties are written by applyDifficulty().
+    // All other properties are fixed and readonly.
     QtObject {
         id: balance
 
         // Speed & Movement
-        // Initial world scroll speed. Higher = faster game from the start.
-        readonly property real initialScrollSpeed: 1.6
-        // Scroll speed added on every level-up. Higher = steeper ramp.
-        readonly property real scrollSpeedPerLevel: 0.05
-        // Converts accelerometer tilt to player pixel movement per frame.
-        // Higher = more responsive but harder to control precisely.
+        property real initialScrollSpeed: 1.6
+        property real scrollSpeedPerLevel: 0.05
         readonly property real playerSensitivity: 1.2
-        // Player movement multiplier during the yellow speed-boost power-up.
         readonly property real speedBoostMultiplier: 2.0
 
         // Level Progression
-        // Asteroids that must pass before the next level triggers.
-        readonly property int asteroidsPerLevel: 100
-        // Spawn probability per frame at level 1. Keep well below 1.0.
-        readonly property real initialAsteroidDensity: 0.2
-        // Added to asteroid density on each level-up. Lower = gentler ramp.
-        readonly property real asteroidDensityPerLevel: 0.1
-        // Minimum ms between any spawn check at level 1.
-        readonly property int initialSpawnCooldown: 200
-        // Cooldown reduction per level (ms). Lower = slower ramp.
-        readonly property int spawnCooldownPerLevel: 2
-        // Hard floor on spawn cooldown so high levels don't flood the screen.
-        readonly property int minSpawnCooldown: 100
+        readonly property int  asteroidsPerLevel: 100
+        property real initialAsteroidDensity: 0.20
+        property real asteroidDensityPerLevel: 0.10
+        readonly property int  initialSpawnCooldown: 200
+        readonly property int  spawnCooldownPerLevel: 2
+        readonly property int  minSpawnCooldown: 100
 
         // Power-up Global Density
-        // Base power-up chance = currentAsteroidDensity × powerupDensityFactor.
-        // Raise this to spawn more power-ups overall without touching weights.
-        // At default (0.001) with initialAsteroidDensity (0.2): ~0.02% base chance per frame.
-        readonly property real powerupDensityFactor: 0.001
+        property real powerupDensityFactor: 0.001
 
         // Power-up Relative Weights
-        // Each weight multiplies powerupBaseChance for that type.
-        // Double a weight to double that type's frequency. Set to 0 to disable.
-        readonly property real weightShield: 1.6           // Blue   – +1 shield
-        readonly property real weightInvincibility: 0.4    // Pink   – timed invincibility
-        readonly property real weightSpeedBoost: 0.8       // Yellow – speed boost
-        readonly property real weightScoreMultiplier: 0.8  // Green  – 2× score
-        readonly property real weightSlowMo: 1.0           // Cyan   – slow motion
-        readonly property real weightShrink: 1.0           // Orange – player shrinks
-        readonly property real weightLaserSwipe: 0.4       // Red    – screen-sweep laser
-        readonly property real weightAutoFire: 0.8         // Purple – auto fire
+        readonly property real weightShield: 1.6
+        property real weightInvincibility: 0.4
+        readonly property real weightSpeedBoost: 0.8
+        readonly property real weightScoreMultiplier: 0.8
+        readonly property real weightSlowMo: 1.0
+        readonly property real weightShrink: 1.0
+        readonly property real weightLaserSwipe: 0.4
+        readonly property real weightAutoFire: 0.8
 
         // Power-up Durations (milliseconds)
-        readonly property int gracePeriodMs: 2000     // Invincibility window after a hit
-        readonly property int invincibilityMs: 10000  // Pink power-up active time
-        readonly property int speedBoostMs: 6000      // Yellow power-up active time
-        readonly property int scoreMultiplierMs: 10000 // Green power-up active time
-        readonly property int slowMoMs: 6000          // Cyan power-up active time
-        readonly property int shrinkMs: 6000          // Orange power-up active time
-        readonly property int autoFireMs: 6000        // Purple power-up total window
-        readonly property int autoFireShots: 30       // Shots fired per autoFire pickup
+        readonly property int gracePeriodMs: 2000
+        readonly property int invincibilityMs: 10000
+        readonly property int speedBoostMs: 6000
+        readonly property int scoreMultiplierMs: 10000
+        readonly property int slowMoMs: 6000
+        readonly property int shrinkMs: 6000
+        readonly property int autoFireMs: 6000
+        readonly property int autoFireShots: 30
 
         // Scoring
-        // Multiplier applied to all scoring while the green power-up is active.
         readonly property real scoreMultiplierValue: 2.0
-        // Window in ms within which successive close dodges chain into a combo.
-        readonly property int comboWindowMs: 2000
+        readonly property int  comboWindowMs: 2000
 
         // Shield
         readonly property int initialShield: 2
@@ -185,26 +218,35 @@ Item {
 
     onGameOverChanged: {
         if (gameOver) {
-            if (score > highScore.value) {
-                highScore.value = score
-            }
-            if (level > highLevel.value) {
-                highLevel.value = level
-            }
+            DodgerStorage.setHighScore(currentDifficulty, score)
+            DodgerStorage.setHighLevel(currentDifficulty, level)
             clearPowerupBars()
+
+            // Build sorted leaderboard for the game over screen
+            var diffs = ["Cadet Swerver", "Captain Slipstreamer", "Commander Stardust", "Major Roadkill"]
+            var entries = []
+            for (var i = 0; i < diffs.length; i++) {
+                entries.push({
+                    name:  diffs[i],
+                    score: DodgerStorage.highScore(diffs[i]),
+                    level: DodgerStorage.highLevel(diffs[i])
+                })
+            }
+            entries.sort(function(a, b) { return b.score - a.score })
+
+            var model = []
+            model.push({ rowType: "current", name: currentDifficulty, score: score, level: level })
+            model.push({ rowType: "header" })
+            for (var j = 0; j < entries.length; j++) {
+                model.push({ rowType: "history", name: entries[j].name, score: entries[j].score, level: entries[j].level })
+            }
+            goModel = model
         }
     }
 
-    ConfigurationValue {
-        id: highScore
-        key: "/asteroid-dodger/highScore"
-        defaultValue: 0
-    }
-
-    ConfigurationValue {
-        id: highLevel
-        key: "/asteroid-dodger/highLevel"
-        defaultValue: 1
+    NonGraphicalFeedback {
+        id: feedback
+        event: "press"
     }
 
     Binding {
@@ -213,19 +255,14 @@ Item {
         value: !gameOver
     }
 
-    NonGraphicalFeedback {
-        id: feedback
-        event: "press"
-    }
-
     Component {
         id: progressBarComponent
         Item {
             id: progressBar
-            property real progress: 1.0
+            property real   progress: 1.0
             property string fillColor: "#FFD700"
             property string bgColor: "#45220A"
-            property int duration: 0
+            property int    duration: 0
             width: dimsFactor * 28
             height: dimsFactor * 2
 
@@ -268,10 +305,10 @@ Item {
     Timer {
         id: gameTimer
         interval: 16
-        running: !gameOver && !calibrating && !showingNow && !showingSurvive
+        running: !gameOver && !inPreGame
         repeat: true
         property real lastFps: 60
-        property var fpsHistory: []
+        property var  fpsHistory: []
         property real lastFpsUpdate: 0
         property real lastGraphUpdate: 0
         property real smoothedX: 0
@@ -280,7 +317,7 @@ Item {
         onTriggered: {
             var currentTime = Date.now()
             var deltaTime = lastFrameTime > 0 ? (currentTime - lastFrameTime) / 1000 : 0.016
-            if (deltaTime > 0.033) deltaTime = 0.033  // Cap at ~30 FPS
+            if (deltaTime > 0.033) deltaTime = 0.033
             lastFrameTime = currentTime
             updateGame(deltaTime)
 
@@ -317,7 +354,9 @@ Item {
         repeat: false
         onTriggered: {
             isGraceActive = false
-            invincible = false
+            if (!isInvincibleActive) {
+                invincible = false
+            }
             removePowerup("grace")
         }
         onRunningChanged: {
@@ -334,7 +373,9 @@ Item {
         repeat: false
         onTriggered: {
             isInvincibleActive = false
-            invincible = false
+            if (!isGraceActive) {
+                invincible = false
+            }
             removePowerup("invincibility")
         }
     }
@@ -700,7 +741,7 @@ Item {
                 width: parent.width
                 height: parent.height
                 z: 0
-                visible: !calibrating && !showingNow && !showingSurvive
+                visible: !inPreGame
             }
 
             Item {
@@ -708,7 +749,7 @@ Item {
                 width: parent.width
                 height: parent.height
                 z: 0
-                visible: !calibrating && !showingNow && !showingSurvive
+                visible: !inPreGame
             }
 
             Item {
@@ -716,7 +757,7 @@ Item {
                 x: root.width / 2
                 y: root.height * 0.75
                 z: 1
-                visible: !calibrating && !showingNow && !showingSurvive
+                visible: !inPreGame
 
                 Image {
                     id: player
@@ -759,9 +800,9 @@ Item {
                         fillColor: "transparent"
                         startX: dimsFactor * 7; startY: 0
                         PathLine { x: dimsFactor * 14; y: dimsFactor * 7 }
-                        PathLine { x: dimsFactor * 7; y: dimsFactor * 14 }
-                        PathLine { x: 0; y: dimsFactor * 7 }
-                        PathLine { x: dimsFactor * 7; y: 0 }
+                        PathLine { x: dimsFactor * 7;  y: dimsFactor * 14 }
+                        PathLine { x: 0;               y: dimsFactor * 7 }
+                        PathLine { x: dimsFactor * 7;  y: 0 }
                     }
                 }
 
@@ -805,7 +846,7 @@ Item {
                     topMargin: dimsFactor * 6
                 }
                 z: 4
-                visible: !gameOver && !calibrating && !showingNow && !showingSurvive
+                visible: !gameOver && !inPreGame
 
                 Item {
                     id: levelProgressBar
@@ -853,7 +894,7 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
-                visible: !gameOver && !calibrating && !showingNow && !showingSurvive
+                visible: !gameOver && !inPreGame
             }
 
             Item {
@@ -865,7 +906,7 @@ Item {
                 }
                 width: dimsFactor * 28
                 height: dimsFactor * 2
-                visible: !gameOver && !calibrating && !showingNow && !showingSurvive
+                visible: !gameOver && !inPreGame
                 z: 4
 
                 Rectangle {
@@ -897,13 +938,13 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
-                visible: !gameOver && !calibrating && !showingNow && !showingSurvive
+                visible: !gameOver && !inPreGame
             }
 
             Item {
                 id: scoreArea
                 z: 2
-                visible: !gameOver && !calibrating && !showingNow && !showingSurvive
+                visible: !gameOver && !inPreGame
                 x: playerContainer.x + playerContainer.width / 2 - scoreText.width / 2
                 y: playerContainer.y + playerContainer.height + dimsFactor * 6
 
@@ -952,6 +993,8 @@ Item {
                 }
             }
 
+            // ── Pre-game screens (difficulty selection + calibration) ──────────
+
             Item {
                 id: titleText
                 anchors {
@@ -960,7 +1003,7 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
-                visible: calibrating
+                visible: calibrating || selectingDifficulty
 
                 Text {
                     text: "v2.0\nAsteroid Dodger"
@@ -977,8 +1020,62 @@ Item {
             Item {
                 id: calibrationContainer
                 anchors.fill: parent
-                visible: calibrating
+                visible: calibrating || selectingDifficulty
 
+                // ── Difficulty selector — shown on startup ────────────────────
+                Column {
+                    id: difficultySelector
+                    anchors {
+                        horizontalCenter: parent.horizontalCenter
+                        top: parent.top
+                        topMargin: parent.height * 0.42
+                    }
+                    spacing: dimsFactor * 4
+                    visible: selectingDifficulty
+
+                    ValueCycler {
+                        id: difficultyCycler
+                        width: dimsFactor * 54
+                        height: dimsFactor * 26
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        valueArray: ["Cadet Swerver", "Captain Slipstreamer", "Commander Stardust", "Major Roadkill"]
+                        currentValue: DodgerStorage.difficulty
+                        onValueChanged: currentValue = value
+                    }
+
+                    Rectangle {
+                        id: dieNowButton
+                        width: Math.round(dimsFactor * 42 * goScale)
+                        height: Math.round(dimsFactor * 14 * goScale)
+                        color: "green"
+                        border.color: "white"
+                        border.width: Math.round(dimsFactor * 1 * goScale)
+                        radius: Math.round(dimsFactor * 3 * goScale)
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        Text {
+                            text: "Die Now"
+                            color: "white"
+                            font {
+                                pixelSize: Math.round(dimsFactor * 6 * goScale)
+                                bold: true
+                            }
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                applyDifficulty(difficultyCycler.currentValue)
+                                calibrationTimer = 2
+                                selectingDifficulty = false
+                                calibrating = true
+                            }
+                        }
+                    }
+                }
+
+                // ── Calibration countdown — shown after Die Now ───────────────
                 Column {
                     id: calibrationText
                     anchors {
@@ -986,10 +1083,12 @@ Item {
                         horizontalCenter: parent.horizontalCenter
                     }
                     spacing: dimsFactor * 1
+                    visible: calibrating
                     opacity: showingNow ? 0 : 1
                     Behavior on opacity {
                         NumberAnimation { duration: 500; easing.type: Easing.InOutQuad }
                     }
+
                     Text {
                         text: "Calibrating"
                         color: "white"
@@ -1013,6 +1112,8 @@ Item {
                     }
                 }
             }
+
+            // ── Intro transitions ─────────────────────────────────────────────
 
             Text {
                 id: nowText
@@ -1058,6 +1159,18 @@ Item {
                 }
             }
 
+            // ── Pause & Debug ─────────────────────────────────────────────────
+            
+            Rectangle {
+                anchors.fill: parent
+                color: "black"
+                opacity: paused && !gameOver ? 0.65 : 0
+                visible: opacity > 0
+                Behavior on opacity {
+                    NumberAnimation { duration: 250; easing.type: Easing.InOutQuad }
+                }
+            }
+            
             Text {
                 id: pauseText
                 text: "Paused"
@@ -1068,7 +1181,7 @@ Item {
                 }
                 anchors.centerIn: parent
                 opacity: 0
-                visible: !gameOver && !calibrating && !showingNow && !showingSurvive
+                visible: !gameOver && !inPreGame
                 Behavior on opacity {
                     NumberAnimation {
                         duration: 250
@@ -1077,7 +1190,7 @@ Item {
                 }
                 MouseArea {
                     anchors.fill: parent
-                    enabled: !gameOver && !calibrating && !showingNow && !showingSurvive
+                    enabled: !gameOver && !inPreGame
                     onClicked: {
                         paused = !paused
                         pauseText.opacity = paused ? 1.0 : 0.0
@@ -1095,7 +1208,7 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                     bottom: fpsGraph.top
                 }
-                visible: debugMode && !gameOver && !calibrating && !showingNow && !showingSurvive
+                visible: debugMode && !gameOver && !inPreGame
             }
 
             Rectangle {
@@ -1109,7 +1222,7 @@ Item {
                     top: debugToggle.top
                     topMargin: dimsFactor * 3
                 }
-                visible: debugMode && !gameOver && !calibrating && !showingNow && !showingSurvive
+                visible: debugMode && !gameOver && !inPreGame
 
                 Row {
                     anchors.fill: parent
@@ -1153,7 +1266,7 @@ Item {
                         easing.type: Easing.InOutQuad
                     }
                 }
-                visible: paused && !gameOver && !calibrating && !showingNow && !showingSurvive
+                visible: paused && !gameOver && !inPreGame
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
@@ -1163,9 +1276,13 @@ Item {
             }
         }
 
+        // ── Game Over Screen ──────────────────────────────────────────────────
+        // ListView declared first (lowest paint order) so "Game Over!" text
+        // and "Die Again" button float above it without a z: hack.
+
         Item {
             id: gameOverScreen
-            anchors.centerIn: parent
+            anchors.fill: parent
             z: 5
             visible: gameOver
             opacity: 0
@@ -1179,75 +1296,145 @@ Item {
                     opacity = 0
                 }
             }
-
-            Column {
-                spacing: Math.round(dimsFactor * 6 * goScale)
-                anchors.centerIn: parent
-
-                Text {
-                    id: gameOverText
-                    text: "Game Over!"
-                    color: "red"
-                    font {
-                        pixelSize: Math.round(dimsFactor * 8 * goScale)
-                        bold: true
-                    }
-                    horizontalAlignment: Text.AlignHCenter
+            
+            Rectangle {
+                anchors.fill: parent
+                color: "black"
+                opacity: 0.72
+            }
+            
+            // Scrollable results list
+            ListView {
+                id: goList
+                anchors {
+                    fill: parent
+                    leftMargin: dimsFactor * 15
+                    rightMargin: dimsFactor * 15
+                    topMargin: dimsFactor * 22
+                    bottomMargin: dimsFactor * 28
                 }
+                model: goModel
+                spacing: 0
 
-                Column {
-                    spacing: Math.round(dimsFactor * 1 * goScale)
-                    anchors.horizontalCenter: parent.horizontalCenter
+                delegate: Item {
+                    width: ListView.view ? ListView.view.width : 0
+                    height: !modelData ? 0 :
+                            modelData.rowType === "header" ? dimsFactor * 12 : dimsFactor * 24
 
-                    Row {
-                        spacing: Math.round(dimsFactor * 2 * goScale)
-                        Text { text: "Score"; color: "#dddddd"; font.pixelSize: Math.round(dimsFactor * 4 * goScale); width: Math.round(dimsFactor * 22 * goScale); horizontalAlignment: Text.AlignHCenter }
-                        Text { text: score; color: "white"; font.pixelSize: Math.round(dimsFactor * 5 * goScale); font.bold: true; width: Math.round(dimsFactor * 11 * goScale); horizontalAlignment: Text.AlignHCenter }
-                    }
-                    Row {
-                        spacing: Math.round(dimsFactor * 2 * goScale)
-                        Text { text: "Level"; color: "#dddddd"; font.pixelSize: Math.round(dimsFactor * 4 * goScale); width: Math.round(dimsFactor * 22 * goScale); horizontalAlignment: Text.AlignHCenter }
-                        Text { text: level; color: "white"; font.pixelSize: Math.round(dimsFactor * 5 * goScale); font.bold: true; width: Math.round(dimsFactor * 11 * goScale); horizontalAlignment: Text.AlignHCenter }
-                    }
-                    Row {
-                        spacing: Math.round(dimsFactor * 2 * goScale)
-                        Text { text: "High Score"; color: "#dddddd"; font.pixelSize: Math.round(dimsFactor * 4 * goScale); width: Math.round(dimsFactor * 22 * goScale); horizontalAlignment: Text.AlignHCenter }
-                        Text { text: highScore.value; color: "white"; font.pixelSize: Math.round(dimsFactor * 5 * goScale); font.bold: true; width: Math.round(dimsFactor * 11 * goScale); horizontalAlignment: Text.AlignHCenter }
-                    }
-                    Row {
-                        spacing: Math.round(dimsFactor * 2 * goScale)
-                        Text { text: "Max Level"; color: "#dddddd"; font.pixelSize: Math.round(dimsFactor * 4 * goScale); width: Math.round(dimsFactor * 22 * goScale); horizontalAlignment: Text.AlignHCenter }
-                        Text { text: highLevel.value; color: "white"; font.pixelSize: Math.round(dimsFactor * 5 * goScale); font.bold: true; width: Math.round(dimsFactor * 11 * goScale); horizontalAlignment: Text.AlignHCenter }
-                    }
-                }
+                    // Current run row
+                    Column {
+                        visible: modelData && modelData.rowType === "current"
+                        anchors.centerIn: parent
+                        spacing: dimsFactor * 1
 
-                Rectangle {
-                    id: tryAgainButton
-                    width: Math.round(dimsFactor * 42 * goScale)
-                    height: Math.round(dimsFactor * 14 * goScale)
-                    color: "green"
-                    border.color: "white"
-                    border.width: Math.round(dimsFactor * 1 * goScale)
-                    radius: Math.round(dimsFactor * 3 * goScale)
-                    anchors.horizontalCenter: parent.horizontalCenter
-
-                    Text {
-                        text: "Die Again"
-                        color: "white"
-                        font {
-                            pixelSize: Math.round(dimsFactor * 6 * goScale)
-                            bold: true
+                        Text {
+                            text: modelData ? modelData.name : ""
+                            color: "#dddddd"
+                            font { pixelSize: dimsFactor * 8; bold: true; family: "Fyodor" }
+                            anchors.horizontalCenter: parent.horizontalCenter
                         }
+                        Row {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: dimsFactor * 7
+                            Text {
+                                text: "Score  " + (modelData ? modelData.score : 0)
+                                color: "white"
+                                font.pixelSize: dimsFactor * 6
+                                font.bold: true
+                            }
+                            Text {
+                                text: "Level  " + (modelData ? modelData.level : 0)
+                                color: "white"
+                                font.pixelSize: dimsFactor * 6
+                                font.bold: true
+                            }
+                        }
+                    }
+
+                    // Highscore header row
+                    Text {
+                        visible: modelData && modelData.rowType === "header"
+                        text: "Highscore"
+                        color: "#888888"
+                        font { pixelSize: dimsFactor * 8; family: "Fyodor" }
                         anchors.centerIn: parent
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: gameOver
-                        onClicked: {
-                            restartGame()
-                            gameOver = false
+                    // Historical difficulty row
+                    Column {
+                        visible: modelData && modelData.rowType === "history"
+                        anchors.centerIn: parent
+                        spacing: dimsFactor * 1
+                        
+                        Text {
+                            text: modelData ? modelData.name : ""
+                            color: "#cccccc"
+                            font.pixelSize: dimsFactor * 6
+                            anchors.horizontalCenter: parent.horizontalCenter
                         }
+                        Row {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: dimsFactor * 7
+                            Text {
+                                text: "Score  " + (modelData ? modelData.score : 0)
+                                color: "white"
+                                font.pixelSize: dimsFactor * 6
+                            }
+                            Text {
+                                text: "Level  " + (modelData ? modelData.level : 0)
+                                color: "white"
+                                font.pixelSize: dimsFactor * 6
+                            }
+                        }
+                    }
+                }
+            }
+
+            // "Game Over!" floats above the list — declared after ListView
+            Text {
+                text: "Game Over!"
+                color: "red"
+                font {
+                    pixelSize: Math.round(dimsFactor * 8 * goScale)
+                    bold: true
+                }
+                anchors {
+                    top: parent.top
+                    topMargin: dimsFactor * 6
+                    horizontalCenter: parent.horizontalCenter
+                }
+            }
+
+            // "Die Again" button — declared last, MouseArea never covered
+            Rectangle {
+                id: tryAgainButton
+                width: Math.round(dimsFactor * 42 * goScale)
+                height: Math.round(dimsFactor * 14 * goScale)
+                color: "green"
+                border.color: "white"
+                border.width: Math.round(dimsFactor * 1 * goScale)
+                radius: Math.round(dimsFactor * 3 * goScale)
+                anchors {
+                    bottom: parent.bottom
+                    bottomMargin: dimsFactor * 6
+                    horizontalCenter: parent.horizontalCenter
+                }
+
+                Text {
+                    text: "Die Again"
+                    color: "white"
+                    font {
+                        pixelSize: Math.round(dimsFactor * 6 * goScale)
+                        bold: true
+                    }
+                    anchors.centerIn: parent
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: gameOver
+                    onClicked: {
+                        restartGame()
                     }
                 }
             }
@@ -1303,9 +1490,9 @@ Item {
                             return "#" + hex + hex + hex + "ff"
                         }
                         startX: asteroidShape.width * 0.5; startY: 0
-                        PathLine { x: asteroidShape.width; y: asteroidShape.height * 0.5 }
+                        PathLine { x: asteroidShape.width;       y: asteroidShape.height * 0.5 }
                         PathLine { x: asteroidShape.width * 0.5; y: asteroidShape.height }
-                        PathLine { x: 0; y: asteroidShape.height * 0.5 }
+                        PathLine { x: 0;                         y: asteroidShape.height * 0.5 }
                         PathLine { x: asteroidShape.width * 0.5; y: 0 }
                     }
                 }
@@ -1355,6 +1542,34 @@ Item {
         }
     }
 
+    // ── Functions ─────────────────────────────────────────────────────────────
+
+    function applyDifficulty(name) {
+        var preset = difficultyPresets[name]
+        if (!preset) preset = difficultyPresets["Cadet Swerver"]
+        balance.initialScrollSpeed      = preset.initialScrollSpeed
+        balance.scrollSpeedPerLevel     = preset.scrollSpeedPerLevel
+        balance.initialAsteroidDensity  = preset.initialAsteroidDensity
+        balance.asteroidDensityPerLevel = preset.asteroidDensityPerLevel
+        balance.powerupDensityFactor    = preset.powerupDensityFactor
+        balance.weightInvincibility     = preset.weightInvincibility
+        scrollSpeed      = preset.initialScrollSpeed
+        savedScrollSpeed = preset.initialScrollSpeed
+        currentDifficulty = name
+        DodgerStorage.difficulty = name
+        // Rebuild powerupTypes so the new weightInvincibility value takes effect
+        powerupTypes = [
+            { type: "shield",          weight: balance.weightShield },
+            { type: "invincibility",   weight: balance.weightInvincibility },
+            { type: "speedBoost",      weight: balance.weightSpeedBoost },
+            { type: "scoreMultiplier", weight: balance.weightScoreMultiplier },
+            { type: "slowMo",          weight: balance.weightSlowMo },
+            { type: "shrink",          weight: balance.weightShrink },
+            { type: "laserSwipe",      weight: balance.weightLaserSwipe },
+            { type: "autoFire",        weight: balance.weightAutoFire },
+        ]
+    }
+
     function addPowerupBar(type, duration, color, bgColor) {
         var existingIndex = activePowerups.findIndex(function(p) { return p.type === type })
         if (existingIndex !== -1) {
@@ -1371,9 +1586,9 @@ Item {
         }
         var bar = progressBarComponent.createObject(powerupBars, {
             "fillColor": color,
-            "bgColor": bgColor,
-            "duration": duration,
-            "progress": 1.0
+            "bgColor":   bgColor,
+            "duration":  duration,
+            "progress":  1.0
         })
         bar.startTimer()
         activePowerups.push({ type: type, bar: bar })
@@ -1902,7 +2117,7 @@ Item {
         })
         preloadParticle.destroy(100)
 
-        // Preload a power-up bar (mimics grace period)
+        // Preload a power-up bar
         addPowerupBar("preload", 100, "#FF69B4", "#8B374F")
         removePowerup("preload")
 
@@ -1911,9 +2126,11 @@ Item {
         initialSpawnTimer.start()
     }
 
-    // Start calibration and initialization immediately
+    // Apply stored difficulty preset and begin async pool initialisation.
+    // selectingDifficulty remains true until the user taps "Die Now".
     Component.onCompleted: {
-        calibrating = true
+        applyDifficulty(DodgerStorage.difficulty)
+        selectingDifficulty = true
         initializeGame()
     }
 }
