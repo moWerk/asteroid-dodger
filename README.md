@@ -1,60 +1,87 @@
 # asteroid-dodger
 
-Asteroid-Dodger is a thrilling survival game for AsteroidOS where you tilt your watch to surf through an ever-denser asteroid field, nailing asteroid surfing combos for big points. Master the art of near-misses and grab rare power-up potions to shrink, speed up, or freeze the cosmic chaos—all while the challenge ramps up with each level. With its retro arcade flair, vibrant visuals, and accelerometer-driven action, this game turns your wrist into a playground of skill and reflexes. Ready to ride the asteroid waves and claim the high score?
+Asteroid-Dodger is a thrilling survival game for AsteroidOS where you
+tilt your watch to surf through an ever-denser asteroid field, nailing
+near-miss combos for big points. Master the art of close dodges, grab
+power-up potions to shift the odds, and climb four difficulty tiers
+from relaxed to ruthless. With retro arcade flair, a shader death
+sequence, and accelerometer-driven action, this game turns your wrist
+into a playground of skill and reflexes.
+
+## Difficulty Tiers
+
+- **Cadet Swerver** — Relaxed density and speed. The original game feel.
+- **Captain Slipstreamer** — Faster scroll, tighter asteroid density.
+- **Commander Stardust** — Reduced power-up window, rarer invincibility.
+- **Major Roadkill** — No invincibility pickup. Godspeed.
+
+Your last-played difficulty is remembered. A per-difficulty leaderboard
+on the game over screen tracks your best score and max level across all
+four tiers.
 
 ## Gameplay Mechanics
 
 - **Random generation** of the asteroid field and power-ups for endless variety.
-- **Combo system**: Asteroid surfing (near-miss dodging) grants more points per successive dodge within a 2-second window.
-- **Level progression**: Every 100 asteroids survived increases speed and field density.
-- **Highscore tracking** stored in persistent `ConfigurationValue`.
-- **Shield system** Increase your shield up to 10 impacts using power ups. Displayed in a bar below the player.
+- **Combo system**: Near-miss dodging within a 2-second window chains into
+  multiplied points. A green meter below the score shows the combo window.
+- **Level progression**: Every 100 asteroids survived increases speed and density.
+- **Shield system**: Start with 2 shields, collect blue power-ups to rebuild up to 10.
+- **Highscore tracking**: Stored per difficulty in `~/.config/asteroid-dodger/game.ini`.
 
 ## Visuals & Feedback
 
-- **Background Flashes** Atmospheric background effects, colored consistently to indcate game events.
-- **Parallax effect** with slower, non-colliding larger asteroids for added depth.
-- **Particle effects** for scoring asteroids enhance the action. Particles grow larger and turn pink the higher their value.
-- **Hit feedback**: Player opacity blinks when hit, signaling a 2-second invincibility grace period.
-- **Haptic feedback**: Vibration and animated effects for damage and level advancement.
-- **Combo meter**: A green indicator runs down to show the 2 second combo period.
-- **Visualization of combo area**: Helps precisely aimed dodges.
-- **Dynamic Progress Bars** for all power-ups to indicate their duration
+- **Death shader**: A fatal hit decelerates the field and plays an expanding
+  ring shader over the player before the game over screen appears.
+- **Background flashes**: Color-coded atmospheric flashes signal game events.
+- **Parallax effect**: Slower non-colliding large asteroids add depth.
+- **Particle effects**: Score particles grow larger and turn pink at high combo values.
+- **Hit feedback**: Player blinks during the 2-second grace invincibility window.
+- **Haptic feedback**: Vibration on damage and level advancement.
+- **Combo area visualization**: Diamond overlay shows the near-miss detection zone.
+- **Dynamic power-up bars**: Each active power-up shows a color-coded duration bar.
 
 ## Power-Ups
 
-- **Blue**: Gain additional shield points. 
-- **Pink**: 10 seconds of invincibility. Stack invincibility and grace periods to become untouchable—time your power-ups for survival!
-- **Yellow**: 6-second speed boost with a tricky “drunk” control twist. Grab speed boosts to zip through asteroids and stack combos—just don’t lose control!
-- **Green**: 2x score multiplier for 10 seconds. Time your score multiplier for combo runs or power-up blasts—double your rewards!
-- **Cyan**: 6-second freeze, slowing the playfield by 50%. Slow time to master combos and grab power-ups safely—control the pace of battle!
-- **Orange**: Shrink to 50% size, growing back over 6 seconds. Shrink down to slip through asteroid fields—evasion is your edge!
-- **NEW: Purple**: Auto Fire at 200ms for 6000ms and destroy asteroids and potions
-- **NEW: Red**: Laser Swipe the screen from all objects.
+- **Blue**: Gain +1 shield point (up to 10).
+- **Pink**: 10 seconds of invincibility. Stacks with grace period — not available on Major Roadkill.
+- **Yellow**: 6-second speed boost with unpredictable "drunk" steering.
+- **Green**: 2× score multiplier for 10 seconds.
+- **Cyan**: 6-second slow-motion — halves scroll speed and spawn rate.
+- **Orange**: Shrink to 50% size, growing back over 6 seconds.
+- **Purple**: Auto-fire — 30 shots over 6 seconds destroy asteroids and potions.
+- **Red**: Laser swipe — sweeps the screen clear of all objects.
 
 ## UI & Controls
 
-- **Accelerometer control** of the X-axis for horizontal movement.
-- **Exact crash detection** using a `QtShapes` hitbox shaped like the AsteroidOS logo.
-- **HUD displays** score, lives, and current level.
-- **Game pauses** with a screen tap.
-- **Calibration start screen** adjusts the accelerometer to your comfortable position, Skip with tap on screen.
-- **Game intro screen** smoothly transitions from calibration to action.
-- **Debug Tools** FPS counter toggle accessible via the pause screen.
+- **Tilt to move**: Accelerometer controls horizontal player position.
+- **Start screen**: Select difficulty via tap-cycling ValueCycler, then tap Die Now.
+- **Calibration**: 2-second hold to set your comfortable neutral tilt position.
+- **Pause**: Tap anywhere during play to pause. Tap again to resume.
+- **Game over screen**: Shows current run result and full per-difficulty leaderboard.
+- **Die Again**: Instantly restarts at current difficulty — no re-calibration needed.
+- **Exact crash detection**: `QtShapes` hitbox shaped like the AsteroidOS logo.
+- **Debug tools**: FPS counter and graph toggle accessible from the pause screen.
 
-## Tactical gameplay considerations
+## Tactical Considerations
 
-- Chain combos by dodging asteroids within 2 seconds—precision pays off with massive score boosts!
-- Pickung up any power-up potions resets the combo period and thus count. If you are out for maximum combos, be mindful with collecting power-ups.
-- Destroying asteroids before they pass the player either by shooting them individually or using the laserSwipe, removes them from the level progression count. You can push back the level change and thus speed and asteroid density progression by destryoing asteroids.
+- Combo chains require consecutive near-misses within 2 seconds. Collecting
+  any power-up resets the combo window — weigh the trade-off at high counts.
+- Destroying asteroids with auto-fire or laser swipe removes them from the
+  level progression count, letting you delay the speed and density ramp.
+- Grace period and pink invincibility stack — taking a hit while pink is
+  active keeps you protected for both durations.
 
+## Requirements
 
-### Ready to test your reflexes? Strap in and dodge like a pro! 🚀
+AsteroidOS 2.0 — Qt 5.15
 
+---
+
+### 2.0 gameplay:
+*video link here*
 
 ### 1.0 Release video:
 https://github.com/user-attachments/assets/99b8f8c5-eea0-4c35-812b-8c7f61858872
 
 ### Initial commit gameplay:
 https://github.com/user-attachments/assets/14be49db-a2c0-466b-8402-caf0e3f773f0
-
