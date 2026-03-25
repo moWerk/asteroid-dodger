@@ -1285,90 +1285,82 @@ Item {
             }
         }
 
-    Component {
-        id: objectComponent
-        Item {
-            property bool isAsteroid: true
-            property bool isPowerup: false
-            property bool isInvincibility: false
-            property bool isSpeedBoost: false
-            property bool isScoreMultiplier: false
-            property bool isShrink: false
-            property bool isSlowMo: false
-            property bool isLaserSwipe: false
-            property bool isAutoFire: false
-            property bool passed: false
-            property bool dodged: false
-            width: isAsteroid ? dimsFactor * 3 : dimsFactor * 6
-            height: isAsteroid ? dimsFactor * 3 : dimsFactor * 6
-            x: Math.random() * (root.width - width)
-            y: -height - (Math.random() * dimsFactor * 28)
-            visible: false
+        Component {
+            id: objectComponent
+            Item {
+                property string type: "asteroid"
+                property bool passed: false
+                property bool dodged: false
+                width: type === "asteroid" ? dimsFactor * 3 : dimsFactor * 6
+                height: type === "asteroid" ? dimsFactor * 3 : dimsFactor * 6
+                x: Math.random() * (root.width - width)
+                y: -height - (Math.random() * dimsFactor * 28)
+                visible: false
 
-            Shape {
-                id: asteroidShape
-                visible: isAsteroid && !dodged
-                property real sizeFactor: 0.8 + Math.random() * 0.4
-                width: dimsFactor * 3 * sizeFactor
-                height: dimsFactor * 3 * sizeFactor
-                anchors.centerIn: parent
+                Shape {
+                    id: asteroidShape
+                    visible: type === "asteroid" && !dodged
+                    property real sizeFactor: 0.8 + Math.random() * 0.4
+                    width: dimsFactor * 3 * sizeFactor
+                    height: dimsFactor * 3 * sizeFactor
+                    anchors.centerIn: parent
 
-                ShapePath {
-                    strokeWidth: -1
-                    fillColor: {
-                        var base = 230
-                        var delta = Math.round(base * 0.22)
-                        var rand = Math.round(base - delta + Math.random() * (2 * delta))
-                        rand = Math.max(179, Math.min(255, rand))
-                        var hex = rand.toString(16).padStart(2, '0')
-                        return "#" + hex + hex + hex + "ff"
-                    }
-                    startX: asteroidShape.width * 0.5; startY: 0
-                    PathLine { x: asteroidShape.width; y: asteroidShape.height * 0.5 }
-                    PathLine { x: asteroidShape.width * 0.5; y: asteroidShape.height }
-                    PathLine { x: 0; y: asteroidShape.height * 0.5 }
-                    PathLine { x: asteroidShape.width * 0.5; y: 0 }
-                }
-            }
-
-            Text {
-                id: scoreText
-                visible: isAsteroid && dodged
-                text: "+1"
-                color: "#00CC00"
-                font.pixelSize: dimsFactor * 4
-                anchors.centerIn: parent
-                Behavior on opacity {
-                    NumberAnimation {
-                        from: 1
-                        to: 0
-                        duration: 900
-                        easing.type: Easing.OutQuad
+                    ShapePath {
+                        strokeWidth: -1
+                        fillColor: {
+                            var base = 230
+                            var delta = Math.round(base * 0.22)
+                            var rand = Math.round(base - delta + Math.random() * (2 * delta))
+                            rand = Math.max(179, Math.min(255, rand))
+                            var hex = rand.toString(16).padStart(2, '0')
+                            return "#" + hex + hex + hex + "ff"
+                        }
+                        startX: asteroidShape.width * 0.5; startY: 0
+                        PathLine { x: asteroidShape.width; y: asteroidShape.height * 0.5 }
+                        PathLine { x: asteroidShape.width * 0.5; y: asteroidShape.height }
+                        PathLine { x: 0; y: asteroidShape.height * 0.5 }
+                        PathLine { x: asteroidShape.width * 0.5; y: 0 }
                     }
                 }
-            }
 
-            Text {
-                visible: !isAsteroid
-                text: "!"
-                color: {
-                    if (isInvincibility) return "#FF69B4"
-                    if (isSpeedBoost) return "#FFFF00"
-                    if (isScoreMultiplier) return "#00CC00"
-                    if (isShrink) return "#FFA500"
-                    if (isSlowMo) return "#00FFFF"
-                    if (isLaserSwipe) return "red"
-                    if (isAutoFire) return "#800080"
-                    return "#0087ff"
+                Text {
+                    id: scoreText
+                    visible: type === "asteroid" && dodged
+                    text: "+1"
+                    color: "#00CC00"
+                    font.pixelSize: dimsFactor * 4
+                    anchors.centerIn: parent
+                    Behavior on opacity {
+                        NumberAnimation {
+                            from: 1
+                            to: 0
+                            duration: 900
+                            easing.type: Easing.OutQuad
+                        }
+                    }
                 }
-                font {
-                    pixelSize: dimsFactor * 6
-                    bold: true
+
+                Text {
+                    visible: type !== "asteroid"
+                    text: "!"
+                    color: {
+                        if (type === "invincibility")  return "#FF69B4"
+                            if (type === "speedBoost")     return "#FFFF00"
+                                if (type === "scoreMultiplier") return "#00CC00"
+                                    if (type === "shrink")         return "#FFA500"
+                                        if (type === "slowMo")         return "#00FFFF"
+                                            if (type === "laserSwipe")     return "red"
+                                                if (type === "autoFire")       return "#800080"
+                                                    return "#0087ff"
+                    }
+                    font {
+                        pixelSize: dimsFactor * 6
+                        bold: true
+                    }
+                    anchors.centerIn: parent
                 }
-                anchors.centerIn: parent
             }
         }
-    }
 
         Accelerometer {
             id: accelerometer
@@ -1482,7 +1474,7 @@ Item {
                 obj.x <= playerContainer.x + playerHitbox.width + dimsFactor * 5 &&
                 obj.y + obj.height >= playerContainer.y - dimsFactor * 5 &&
                 obj.y <= playerContainer.y + playerHitbox.height + dimsFactor * 5) {
-                if (obj.isAsteroid && isColliding(playerHitbox, obj) && !invincible) {
+                if (obj.type === "asteroid" && isColliding(playerHitbox, obj) && !invincible) {
                     shield--
                     if (shield <= 0) {
                         gameOver = true
@@ -1508,13 +1500,13 @@ Item {
                     feedback.play()
                     continue
                 }
-                if (obj.isPowerup && isColliding(playerHitbox, obj)) {
+                if (obj.type === "shield" && isColliding(playerHitbox, obj)) {
                     shield = Math.min(balance.maxShield, shield + 1)
                     flashOverlay.triggerFlash("blue")
                     obj.visible = false
                     continue
                 }
-                if (obj.isInvincibility && isColliding(playerHitbox, obj)) {
+                if (obj.type === "invincibility" && isColliding(playerHitbox, obj)) {
                     invincible = true
                     isInvincibleActive = true
                     invincibilityTimer.restart()
@@ -1523,7 +1515,7 @@ Item {
                     obj.visible = false
                     continue
                 }
-                if (obj.isSpeedBoost && isColliding(playerHitbox, obj)) {
+                if (obj.type === "speedBoost" && isColliding(playerHitbox, obj)) {
                     playerSpeed = balance.playerSensitivity * balance.speedBoostMultiplier
                     isSpeedBoostActive = true
                     speedBoostTimer.restart()
@@ -1532,7 +1524,7 @@ Item {
                     obj.visible = false
                     continue
                 }
-                if (obj.isScoreMultiplier && isColliding(playerHitbox, obj)) {
+                if (obj.type === "scoreMultiplier" && isColliding(playerHitbox, obj)) {
                     scoreMultiplier = balance.scoreMultiplierValue
                     scoreMultiplierElapsed = 0
                     scoreMultiplierTimer.restart()
@@ -1541,7 +1533,7 @@ Item {
                     obj.visible = false
                     continue
                 }
-                if (obj.isShrink && isColliding(playerHitbox, obj)) {
+                if (obj.type === "shrink" && isColliding(playerHitbox, obj)) {
                     player.width = dimsFactor * 5
                     player.height = dimsFactor * 5
                     playerHitbox.width = dimsFactor * 7
@@ -1553,7 +1545,7 @@ Item {
                     obj.visible = false
                     continue
                 }
-                if (obj.isSlowMo && isColliding(playerHitbox, obj)) {
+                if (obj.type === "slowMo" && isColliding(playerHitbox, obj)) {
                     if (!isSlowMoActive) {
                         preSlowSpeed = scrollSpeed
                         scrollSpeed = preSlowSpeed / 2
@@ -1566,7 +1558,7 @@ Item {
                     obj.visible = false
                     continue
                 }
-                if (obj.isLaserSwipe && isColliding(playerHitbox, obj)) {
+                if (obj.type === "laserSwipe" && isColliding(playerHitbox, obj)) {
                     flashOverlay.triggerFlash("red")
                     if (!activeLaser) {
                         activeLaser = laserSwipeComponent.createObject(gameArea)
@@ -1574,7 +1566,7 @@ Item {
                     obj.visible = false
                     continue
                 }
-                if (obj.isAutoFire && isColliding(playerHitbox, obj)) {
+                if (obj.type === "autoFire" && isColliding(playerHitbox, obj)) {
                     flashOverlay.triggerFlash("#800080")
                     if (!isAutoFireActive) {
                         var shot = autoFireShotComponent.createObject(gameArea, {
@@ -1585,14 +1577,14 @@ Item {
                         isAutoFireActive = true
                         autoFireTimer.start()
                     } else {
-                        autoFireTimer.restart()  // Extend duration if active
+                        autoFireTimer.restart()
                     }
                     obj.visible = false
                     continue
                 }
-            }
+                }
 
-            if (obj.isAsteroid && (obj.y + obj.height / 2) > playerCenterY && !obj.passed) {
+                if (obj.type === "asteroid" && (obj.y + obj.height / 2) > playerCenterY && !obj.passed) {
                 asteroidCount++
                 obj.passed = true
                 if (obj.x + obj.width >= playerContainer.x - comboDetectionSize / 2 - dimsFactor * 5 &&
@@ -1649,7 +1641,7 @@ Item {
                         shot.x + shot.width + buffer > obj.x &&
                         shot.y < obj.y + obj.height &&
                         shot.y + shot.height > obj.y) {
-                        if (obj.isAsteroid) {
+                        if (obj.type === "asteroid") {
                             score += 100 * scoreMultiplier
                             var objX = obj.x
                             var objY = obj.y
@@ -1678,7 +1670,7 @@ Item {
                 if (obj && obj.visible && obj !== activeLaser &&
                     obj.y <= activeLaser.y + activeLaser.height && obj.y + obj.height >= activeLaser.y &&
                     obj.x + obj.width >= 0 && obj.x <= root.width) {
-                    if (obj.isAsteroid) {
+                    if (obj.type === "asteroid") {
                         score += 10 * scoreMultiplier
                         var objX = obj.x
                         var objY = obj.y
@@ -1706,40 +1698,24 @@ Item {
             lastLargeAsteroidSpawn = currentTime
         }
         if (!paused && currentTime - lastAsteroidSpawn >= effectiveSpawnCooldown && Math.random() < asteroidDensity) {
-            spawnObject({isAsteroid: true})
+            spawnObject("asteroid")
             lastAsteroidSpawn = currentTime
         }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightShield) {
-            spawnObject({isAsteroid: false, isPowerup: true})
-            lastObjectSpawn = currentTime
-        }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightInvincibility) {
-            spawnObject({isAsteroid: false, isInvincibility: true})
-            lastObjectSpawn = currentTime
-        }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightSpeedBoost) {
-            spawnObject({isAsteroid: false, isSpeedBoost: true})
-            lastObjectSpawn = currentTime
-        }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightScoreMultiplier) {
-            spawnObject({isAsteroid: false, isScoreMultiplier: true})
-            lastObjectSpawn = currentTime
-        }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightSlowMo) {
-            spawnObject({isAsteroid: false, isSlowMo: true})
-            lastObjectSpawn = currentTime
-        }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightShrink) {
-            spawnObject({isAsteroid: false, isShrink: true})
-            lastObjectSpawn = currentTime
-        }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightLaserSwipe) {
-            spawnObject({isAsteroid: false, isLaserSwipe: true})
-            lastObjectSpawn = currentTime
-        }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightAutoFire) {
-            spawnObject({isAsteroid: false, isAutoFire: true})
-            lastObjectSpawn = currentTime
+        var powerupTypes = [
+            { type: "shield",          weight: balance.weightShield },
+            { type: "invincibility",   weight: balance.weightInvincibility },
+            { type: "speedBoost",      weight: balance.weightSpeedBoost },
+            { type: "scoreMultiplier", weight: balance.weightScoreMultiplier },
+            { type: "slowMo",          weight: balance.weightSlowMo },
+            { type: "shrink",          weight: balance.weightShrink },
+            { type: "laserSwipe",      weight: balance.weightLaserSwipe },
+            { type: "autoFire",        weight: balance.weightAutoFire },
+        ]
+        for (var p = 0; p < powerupTypes.length; p++) {
+            if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * powerupTypes[p].weight) {
+                spawnObject(powerupTypes[p].type)
+                lastObjectSpawn = currentTime
+            }
         }
     }
 
@@ -1755,35 +1731,19 @@ Item {
         }
     }
 
-    function spawnObject(properties) {
+    function spawnObject(type) {
         for (var i = 0; i < asteroidPool.length; i++) {
             var obj = asteroidPool[i]
             if (!obj.visible) {
-                if (obj.isAsteroid !== (properties.isAsteroid || false) ||
-                    obj.isPowerup !== (properties.isPowerup || false) ||
-                    obj.isInvincibility !== (properties.isInvincibility || false) ||
-                    obj.isSpeedBoost !== (properties.isSpeedBoost || false) ||
-                    obj.isScoreMultiplier !== (properties.isScoreMultiplier || false) ||
-                    obj.isShrink !== (properties.isShrink || false) ||
-                    obj.isSlowMo !== (properties.isSlowMo || false) ||
-                    obj.isLaserSwipe !== (properties.isLaserSwipe || false) ||
-                    obj.isAutoFire !== (properties.isAutoFire || false)) {  // New condition
-                    obj.isAsteroid = properties.isAsteroid || false
-                    obj.isPowerup = properties.isPowerup || false
-                    obj.isInvincibility = properties.isInvincibility || false
-                    obj.isSpeedBoost = properties.isSpeedBoost || false
-                    obj.isScoreMultiplier = properties.isScoreMultiplier || false
-                    obj.isShrink = properties.isShrink || false
-                    obj.isSlowMo = properties.isSlowMo || false
-                    obj.isLaserSwipe = properties.isLaserSwipe || false
-                    obj.isAutoFire = properties.isAutoFire || false  // New property
+                if (obj.type !== type) {
+                    obj.type = type
                 }
                 obj.x = Math.random() * (root.width - obj.width)
                 obj.y = -obj.height - (Math.random() * dimsFactor * 28)
                 obj.visible = true
                 if (obj.passed) obj.passed = false
-                if (obj.dodged) obj.dodged = false
-                return
+                    if (obj.dodged) obj.dodged = false
+                        return
             }
         }
     }
@@ -1937,7 +1897,7 @@ Item {
         property int count: 0
         onTriggered: {
             if (count < 3) {
-                spawnObject({isAsteroid: true})
+                spawnObject("asteroid")
             }
             if (count < 2) {
                 spawnLargeAsteroid()
