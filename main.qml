@@ -17,7 +17,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.15
+import QtQuick 2.9
 import QtSensors 5.15
 import Nemo.Ngf 1.0
 import Nemo.Configuration 1.0
@@ -52,7 +52,7 @@ Item {
     property int score: 0
     property real scoreMultiplier: 1.0
     property real scoreMultiplierElapsed: 0
-    property int shield: 2
+    property int shield: balance.initialShield
     property bool showingNow: false
     property bool showingSurvive: false
     property bool isAutoFireActive: false  // AutoFire active state
@@ -64,10 +64,10 @@ Item {
     property var activePowerups: []
     property var activeShots: []  // New: Track AutoFire shots
     property int asteroidCount: 0
-    property real asteroidDensity: 0.2 + (level - 1) * 0.2
+    property real asteroidDensity: balance.initialAsteroidDensity + (level - 1) * balance.asteroidDensityPerLevel
     property var asteroidPool: []
     property int asteroidPoolSize: 40
-    property int asteroidsPerLevel: 100
+    property int asteroidsPerLevel: balance.asteroidsPerLevel
     property real largeAsteroidDensity: asteroidDensity / 3
     property var largeAsteroidPool: []
     property int largeAsteroidPoolSize: 10
@@ -75,18 +75,87 @@ Item {
     property real lastLargeAsteroidSpawn: 0
     property real lastLaserSwipeSpawn: 0
     property real lastObjectSpawn: 0
-    property int spawnCooldown: Math.max(100, 200 - (level - 1) * 2)
+    property int spawnCooldown: Math.max(balance.minSpawnCooldown, balance.initialSpawnCooldown - (level - 1) * balance.spawnCooldownPerLevel)
 
     // --- Visual and Timing Settings ---
     property real baselineX: 0
     property real dimsFactor: Dims.l(100) / 100
     property string flashColor: ""
     property real lastFrameTime: 0
-    property real playerSpeed: basePlayerSpeed
-    property real basePlayerSpeed: 1.2
+    property real playerSpeed: balance.playerSensitivity
+    property real basePlayerSpeed: balance.playerSensitivity
     property real preSlowSpeed: 0
     property real savedScrollSpeed: 0
-    property real scrollSpeed: 1.6
+    property real scrollSpeed: balance.initialScrollSpeed
+
+    // ── Game Balance ─────────────────────────────────────────────────────────
+    // Single source of truth for all gameplay tuning. Change values here only.
+    QtObject {
+        id: balance
+
+        // Speed & Movement
+        // Initial world scroll speed. Higher = faster game from the start.
+        readonly property real initialScrollSpeed: 1.6
+        // Scroll speed added on every level-up. Higher = steeper ramp.
+        readonly property real scrollSpeedPerLevel: 0.05
+        // Converts accelerometer tilt to player pixel movement per frame.
+        // Higher = more responsive but harder to control precisely.
+        readonly property real playerSensitivity: 1.2
+        // Player movement multiplier during the yellow speed-boost power-up.
+        readonly property real speedBoostMultiplier: 2.0
+
+        // Level Progression
+        // Asteroids that must pass before the next level triggers.
+        readonly property int asteroidsPerLevel: 100
+        // Spawn probability per frame at level 1. Keep well below 1.0.
+        readonly property real initialAsteroidDensity: 0.2
+        // Added to asteroid density on each level-up. Lower = gentler ramp.
+        readonly property real asteroidDensityPerLevel: 0.1
+        // Minimum ms between any spawn check at level 1.
+        readonly property int initialSpawnCooldown: 200
+        // Cooldown reduction per level (ms). Lower = slower ramp.
+        readonly property int spawnCooldownPerLevel: 2
+        // Hard floor on spawn cooldown so high levels don't flood the screen.
+        readonly property int minSpawnCooldown: 100
+
+        // Power-up Global Density
+        // Base power-up chance = currentAsteroidDensity × powerupDensityFactor.
+        // Raise this to spawn more power-ups overall without touching weights.
+        // At default (0.001) with initialAsteroidDensity (0.2): ~0.02% base chance per frame.
+        readonly property real powerupDensityFactor: 0.001
+
+        // Power-up Relative Weights
+        // Each weight multiplies powerupBaseChance for that type.
+        // Double a weight to double that type's frequency. Set to 0 to disable.
+        readonly property real weightShield: 1.6           // Blue   – +1 shield
+        readonly property real weightInvincibility: 0.4    // Pink   – timed invincibility
+        readonly property real weightSpeedBoost: 0.8       // Yellow – speed boost
+        readonly property real weightScoreMultiplier: 0.8  // Green  – 2× score
+        readonly property real weightSlowMo: 1.0           // Cyan   – slow motion
+        readonly property real weightShrink: 1.0           // Orange – player shrinks
+        readonly property real weightLaserSwipe: 0.4       // Red    – screen-sweep laser
+        readonly property real weightAutoFire: 0.8         // Purple – auto fire
+
+        // Power-up Durations (milliseconds)
+        readonly property int gracePeriodMs: 2000     // Invincibility window after a hit
+        readonly property int invincibilityMs: 10000  // Pink power-up active time
+        readonly property int speedBoostMs: 6000      // Yellow power-up active time
+        readonly property int scoreMultiplierMs: 10000 // Green power-up active time
+        readonly property int slowMoMs: 6000          // Cyan power-up active time
+        readonly property int shrinkMs: 6000          // Orange power-up active time
+        readonly property int autoFireMs: 6000        // Purple power-up total window
+        readonly property int autoFireShots: 30       // Shots fired per autoFire pickup
+
+        // Scoring
+        // Multiplier applied to all scoring while the green power-up is active.
+        readonly property real scoreMultiplierValue: 2.0
+        // Window in ms within which successive close dodges chain into a combo.
+        readonly property int comboWindowMs: 2000
+
+        // Shield
+        readonly property int initialShield: 2
+        readonly property int maxShield: 10
+    }
 
     onPausedChanged: {
         if (paused) {
@@ -219,7 +288,7 @@ Item {
                     timer.destroy()
                 }
                 timer = Qt.createQmlObject(`
-                    import QtQuick 2.15
+                    import QtQuick 2.9
                     Timer {
                         interval: 16
                         running: true
@@ -290,7 +359,7 @@ Item {
 
     Timer {
         id: graceTimer
-        interval: 2000
+        interval: balance.gracePeriodMs
         running: isGraceActive && !paused
         repeat: false
         onTriggered: {
@@ -307,7 +376,7 @@ Item {
 
     Timer {
         id: invincibilityTimer
-        interval: 10000
+        interval: balance.invincibilityMs
         running: isInvincibleActive && !paused
         repeat: false
         onTriggered: {
@@ -319,24 +388,24 @@ Item {
 
     Timer {
         id: speedBoostTimer
-        interval: 6000
+        interval: balance.speedBoostMs
         running: isSpeedBoostActive && !paused
         repeat: false
         onTriggered: {
-            playerSpeed = basePlayerSpeed
+            playerSpeed = balance.playerSensitivity
             isSpeedBoostActive = false
             removePowerup("speedBoost")
         }
         onRunningChanged: {
             if (running && !paused) {
-                addPowerupBar("speedBoost", 6000, "#FFFF00", "#8B8B00")
+                addPowerupBar("speedBoost", balance.speedBoostMs, "#FFFF00", "#8B8B00")
             }
         }
     }
 
     Timer {
         id: scoreMultiplierTimer
-        interval: 10000
+        interval: balance.scoreMultiplierMs
         running: scoreMultiplier > 1.0 && !paused
         repeat: false
         onTriggered: {
@@ -346,14 +415,14 @@ Item {
         }
         onRunningChanged: {
             if (running && !paused) {
-                addPowerupBar("scoreMultiplier", 10000, "#00CC00", "#006600")
+                addPowerupBar("scoreMultiplier", balance.scoreMultiplierMs, "#00CC00", "#006600")
             }
         }
     }
 
     Timer {
         id: slowMoTimer
-        interval: 6000
+        interval: balance.slowMoMs
         running: isSlowMoActive && !paused
         repeat: false
         onTriggered: {
@@ -364,7 +433,7 @@ Item {
         }
         onRunningChanged: {
             if (running && !paused) {
-                addPowerupBar("slowMo", 6000, "#00FFFF", "#008B8B")
+                addPowerupBar("slowMo", balance.slowMoMs, "#00FFFF", "#008B8B")
             }
         }
     }
@@ -377,12 +446,12 @@ Item {
         property real elapsed: 0
         onTriggered: {
             elapsed += interval
-            var progress = Math.min(1.0, elapsed / 6000)
+            var progress = Math.min(1.0, elapsed / balance.shrinkMs)
             player.width = dimsFactor * 5 + (dimsFactor * 10 - dimsFactor * 5) * progress
             player.height = dimsFactor * 5 + (dimsFactor * 10 - dimsFactor * 5) * progress
             playerHitbox.width = dimsFactor * 7 + (dimsFactor * 14 - dimsFactor * 7) * progress
             playerHitbox.height = dimsFactor * 7 + (dimsFactor * 14 - dimsFactor * 7) * progress
-            if (elapsed >= 6000) {
+            if (elapsed >= balance.shrinkMs) {
                 isShrinkActive = false
                 elapsed = 0
                 removePowerup("shrink")
@@ -394,7 +463,7 @@ Item {
                 elapsed = 0
             }
             if (running && !paused) {
-                addPowerupBar("shrink", 6000, "#FFA500", "#8B5A00")
+                addPowerupBar("shrink", balance.shrinkMs, "#FFA500", "#8B5A00")
             }
         }
     }
@@ -446,7 +515,7 @@ Item {
 
     Timer {
         id: comboTimer
-        interval: 2000
+        interval: balance.comboWindowMs
         running: comboActive && !paused
         repeat: false
         onTriggered: {
@@ -457,12 +526,12 @@ Item {
 
     Timer {
         id: autoFireTimer
-        interval: 6000 / 30  // ~200ms per shot
+        interval: balance.autoFireMs / balance.autoFireShots
         running: isAutoFireActive && !paused
         repeat: true
         property int shotCount: 0
         onTriggered: {
-            if (shotCount < 30) {
+            if (shotCount < balance.autoFireShots) {
                 var shot = autoFireShotComponent.createObject(gameArea, {
                     "x": playerContainer.x + playerHitbox.x + playerHitbox.width / 2 - dimsFactor * 0.5,
                     "y": playerContainer.y + playerHitbox.y
@@ -470,7 +539,7 @@ Item {
                 activeShots.push(shot)
                 shotCount++
             }
-            if (shotCount >= 30) {
+            if (shotCount >= balance.autoFireShots) {
                 isAutoFireActive = false
                 shotCount = 0
                 stop()
@@ -479,7 +548,7 @@ Item {
         }
         onRunningChanged: {
             if (running && !paused) {
-                addPowerupBar("autoFire", 6000, "#800080", "#4B004B")
+                addPowerupBar("autoFire", balance.autoFireMs, "#800080", "#4B004B")
                 shotCount = 0
             }
         }
@@ -1507,7 +1576,7 @@ Item {
                     continue
                 }
                 if (obj.isPowerup && isColliding(playerHitbox, obj)) {
-                    shield = Math.min(10, shield + 1)
+                    shield = Math.min(balance.maxShield, shield + 1)
                     flashOverlay.triggerFlash("blue")
                     obj.visible = false
                     continue
@@ -1517,25 +1586,25 @@ Item {
                     isInvincibleActive = true
                     invincibilityTimer.restart()
                     flashOverlay.triggerFlash("#FF69B4")
-                    addPowerupBar("invincible", 10000, "#FF69B4", "#8B374F")
+                    addPowerupBar("invincibility", balance.invincibilityMs, "#FF69B4", "#8B374F")
                     obj.visible = false
                     continue
                 }
                 if (obj.isSpeedBoost && isColliding(playerHitbox, obj)) {
-                    playerSpeed = basePlayerSpeed * 2
+                    playerSpeed = balance.playerSensitivity * balance.speedBoostMultiplier
                     isSpeedBoostActive = true
                     speedBoostTimer.restart()
                     flashOverlay.triggerFlash("#FFFF00")
-                    addPowerupBar("speedBoost", 6000, "#FFFF00", "#8B8B00")
+                    addPowerupBar("speedBoost", balance.speedBoostMs, "#FFFF00", "#8B8B00")
                     obj.visible = false
                     continue
                 }
                 if (obj.isScoreMultiplier && isColliding(playerHitbox, obj)) {
-                    scoreMultiplier = 2.0
+                    scoreMultiplier = balance.scoreMultiplierValue
                     scoreMultiplierElapsed = 0
                     scoreMultiplierTimer.restart()
                     flashOverlay.triggerFlash("#00CC00")
-                    addPowerupBar("scoreMultiplier", 10000, "#00CC00", "#006600")
+                    addPowerupBar("scoreMultiplier", balance.scoreMultiplierMs, "#00CC00", "#006600")
                     obj.visible = false
                     continue
                 }
@@ -1547,7 +1616,7 @@ Item {
                     isShrinkActive = true
                     shrinkTimer.restart()
                     flashOverlay.triggerFlash("#FFA500")
-                    addPowerupBar("shrink", 6000, "#FFA500", "#8B5A00")
+                    addPowerupBar("shrink", balance.shrinkMs, "#FFA500", "#8B5A00")
                     obj.visible = false
                     continue
                 }
@@ -1560,7 +1629,7 @@ Item {
                     isSlowMoActive = true
                     slowMoTimer.restart()
                     flashOverlay.triggerFlash("#00FFFF")
-                    addPowerupBar("slowMo", 6000, "#00FFFF", "#008B8B")
+                    addPowerupBar("slowMo", balance.slowMoMs, "#00FFFF", "#008B8B")
                     obj.visible = false
                     continue
                 }
@@ -1698,7 +1767,7 @@ Item {
         if (isAutoFireActive) autoFireElapsed += deltaTime
 
         // Spawning logic
-        var powerupBaseChance = asteroidDensity * 0.001
+        var powerupBaseChance = asteroidDensity * balance.powerupDensityFactor
         if (!paused && currentTime - lastLargeAsteroidSpawn >= effectiveSpawnCooldown && Math.random() < largeAsteroidDensity / 3) {
             spawnLargeAsteroid()
             lastLargeAsteroidSpawn = currentTime
@@ -1707,35 +1776,35 @@ Item {
             spawnObject({isAsteroid: true})
             lastAsteroidSpawn = currentTime
         }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * 1.6) {
+        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightShield) {
             spawnObject({isAsteroid: false, isPowerup: true})
             lastObjectSpawn = currentTime
         }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * 0.4) {
+        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightInvincibility) {
             spawnObject({isAsteroid: false, isInvincibility: true})
             lastObjectSpawn = currentTime
         }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * 0.8) {
+        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightSpeedBoost) {
             spawnObject({isAsteroid: false, isSpeedBoost: true})
             lastObjectSpawn = currentTime
         }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * 0.8) {
+        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightScoreMultiplier) {
             spawnObject({isAsteroid: false, isScoreMultiplier: true})
             lastObjectSpawn = currentTime
         }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * 1.0) {
-            spawnObject({isAsteroid: false, isShrink: true})
-            lastObjectSpawn = currentTime
-        }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * 1.0) {
+        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightSlowMo) {
             spawnObject({isAsteroid: false, isSlowMo: true})
             lastObjectSpawn = currentTime
         }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * 0.4) {
+        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightShrink) {
+            spawnObject({isAsteroid: false, isShrink: true})
+            lastObjectSpawn = currentTime
+        }
+        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightLaserSwipe) {
             spawnObject({isAsteroid: false, isLaserSwipe: true})
             lastObjectSpawn = currentTime
         }
-        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * 0.8) {
+        if (!paused && currentTime - lastObjectSpawn >= effectiveSpawnCooldown && Math.random() < powerupBaseChance * balance.weightAutoFire) {
             spawnObject({isAsteroid: false, isAutoFire: true})
             lastObjectSpawn = currentTime
         }
@@ -1804,19 +1873,19 @@ Item {
     function levelUp() {
         asteroidCount = 0
         level++
-        scrollSpeed += 0.05
+        scrollSpeed += balance.scrollSpeedPerLevel
         savedScrollSpeed = scrollSpeed
         flashOverlay.triggerFlash("#8B6914")
     }
 
     function restartGame() {
         score = 0
-        shield = 2
+        shield = balance.initialShield
         level = 1
         asteroidCount = 0
-        scrollSpeed = 1.6
+        scrollSpeed = balance.initialScrollSpeed
         savedScrollSpeed = scrollSpeed
-        asteroidDensity = 0.18
+        // asteroidDensity is a binding on level — resetting level above is sufficient
         gameOver = false
         paused = false
         playerHit = false
@@ -1886,7 +1955,7 @@ Item {
 
         // Delay spawn to ensure clear
         var spawnTimer = Qt.createQmlObject('
-            import QtQuick 2.15
+            import QtQuick 2.9
             Timer {
                 interval: 50  // Short delay to let game loop clear
                 repeat: true
@@ -1912,7 +1981,7 @@ Item {
 
     function initializeGame() {
         var asteroidPoolTimer = Qt.createQmlObject('
-            import QtQuick 2.15
+            import QtQuick 2.9
             Timer {
                 interval: 10  // Small chunks for responsiveness
                 repeat: true
@@ -1937,7 +2006,7 @@ Item {
 
     function initializeLargeAsteroids() {
         var largeAsteroidPoolTimer = Qt.createQmlObject('
-            import QtQuick 2.15
+            import QtQuick 2.9
             Timer {
                 interval: 10
                 repeat: true
@@ -1978,7 +2047,7 @@ Item {
 
         // Initial spawn
         var spawnTimer = Qt.createQmlObject('
-            import QtQuick 2.15
+            import QtQuick 2.9
             Timer {
                 interval: 200
                 repeat: true
