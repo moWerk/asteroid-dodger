@@ -78,7 +78,7 @@ AsteroidOS 2.0 — Qt 5.15
 ---
 
 ### 2.0 gameplay:
-*video link here*
+[![Dodger 2.0 on Youtube](https://img.youtube.com/vi/pIDpVahpWv8/0.jpg)](https://www.youtube.com/watch?v=pIDpVahpWv8)
 
 ### 1.0 Release video:
 https://github.com/user-attachments/assets/99b8f8c5-eea0-4c35-812b-8c7f61858872
