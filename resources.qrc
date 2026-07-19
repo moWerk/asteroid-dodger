@@ -5,6 +5,7 @@
     <file>ValueCycler.qml</file>
     <file>Balance.qml</file>
     <file>GameOverPage.qml</file>
+    <file>PreGamePage.qml</file>
     <file>DeathShader.qml</file>
     <file>shaders/death.frag.qsb</file>
 </qresource>

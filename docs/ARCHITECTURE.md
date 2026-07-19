@@ -16,6 +16,11 @@ Balance.qml       ALL gameplay tuning + difficulty presets. QtObject,
                   effects of a difficulty switch (scroll speed reset,
                   persistence, powerup weight table) stay in main.qml's
                   applyDifficulty()
+PreGamePage.qml   pre-game flow: title, difficulty cycler + die-now,
+                  calibration countdown, NOW/SURVIVE intro flashes.
+                  Interface: 7 display props in, dieNowClicked(name)
+                  out, playNow()/playSurvive()/stopIntros() driven by
+                  root intro timers
 GameOverPage.qml  game-over overlay: dimmed backdrop, current-run
                   summary, per-difficulty leaderboard, restart button.
                   Interface: model/dimsFactor/goScale/active in,

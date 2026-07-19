@@ -387,7 +387,7 @@ Item {
                 calibrating = false
                 showingNow = true
                 feedback.play()
-                nowTransition.start()
+                preGame.playNow()
                 introTimer.phase = 1
                 introTimer.start()
             }
@@ -404,7 +404,7 @@ Item {
             if (phase === 1) {
                 showingNow = false
                 showingSurvive = true
-                surviveTransition.start()
+                preGame.playSurvive()
                 phase = 2
             } else if (phase === 2) {
                 showingSurvive = false
@@ -941,169 +941,24 @@ Item {
                 }
             }
 
-            // ── Pre-game screens (difficulty selection + calibration) ──────────
+            // ── Pre-game screens (difficulty selection + calibration) ─────────
 
-            Item {
-                id: titleText
-                anchors {
-                    top: parent.top
-                    topMargin: dimsFactor * 10
-                    horizontalCenter: parent.horizontalCenter
-                }
-                z: 4
-                visible: calibrating || selectingDifficulty
-
-                Text {
-                    text: "v2.0\nAsteroid Dodger"
-                    color: "#dddddd"
-                    font {
-                        family: "Fyodor"
-                        pixelSize: dimsFactor * 15
-                    }
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    horizontalAlignment: Text.AlignHCenter
-                }
-            }
-
-            Item {
-                id: calibrationContainer
+            PreGamePage {
+                id: preGame
                 anchors.fill: parent
-                visible: calibrating || selectingDifficulty
-
-                // ── Difficulty selector — shown on startup ────────────────────
-                Column {
-                    id: difficultySelector
-                    anchors {
-                        horizontalCenter: parent.horizontalCenter
-                        top: parent.top
-                        topMargin: parent.height * 0.42
-                    }
-                    spacing: dimsFactor * 4
-                    visible: selectingDifficulty
-
-                    ValueCycler {
-                        id: difficultyCycler
-                        width: dimsFactor * 54
-                        height: dimsFactor * 26
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        valueArray: ["Cadet Swerver", "Captain Slipstreamer", "Commander Stardust", "Major Roadkill"]
-                        currentValue: DodgerStorage.difficulty
-                        onValueChanged: currentValue = value
-                    }
-
-                    Rectangle {
-                        id: dieNowButton
-                        width: Math.round(dimsFactor * 42 * goScale)
-                        height: Math.round(dimsFactor * 14 * goScale)
-                        color: "green"
-                        border.color: "white"
-                        border.width: Math.round(dimsFactor * 1 * goScale)
-                        radius: Math.round(dimsFactor * 3 * goScale)
-                        anchors.horizontalCenter: parent.horizontalCenter
-
-                        Text {
-                            text: "Die Now"
-                            color: "white"
-                            font {
-                                pixelSize: Math.round(dimsFactor * 6 * goScale)
-                                bold: true
-                            }
-                            anchors.centerIn: parent
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                applyDifficulty(difficultyCycler.currentValue)
-                                calibrationTimer = 2
-                                selectingDifficulty = false
-                                calibrating = true
-                            }
-                        }
-                    }
-                }
-
-                // ── Calibration countdown — shown after Die Now ───────────────
-                Column {
-                    id: calibrationText
-                    anchors {
-                        top: parent.verticalCenter
-                        horizontalCenter: parent.horizontalCenter
-                    }
-                    spacing: dimsFactor * 1
-                    visible: calibrating
-                    opacity: showingNow ? 0 : 1
-                    Behavior on opacity {
-                        NumberAnimation { duration: 500; easing.type: Easing.InOutQuad }
-                    }
-
-                    Text {
-                        text: "Calibrating"
-                        color: "white"
-                        font.pixelSize: dimsFactor * 9
-                        horizontalAlignment: Text.AlignHCenter
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                    Text {
-                        text: "Hold your watch comfy"
-                        color: "white"
-                        font.pixelSize: dimsFactor * 6
-                        horizontalAlignment: Text.AlignHCenter
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                    Text {
-                        text: calibrationTimer + "s"
-                        color: "white"
-                        font.pixelSize: dimsFactor * 9
-                        horizontalAlignment: Text.AlignHCenter
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                }
-            }
-
-            // ── Intro transitions ─────────────────────────────────────────────
-
-            Text {
-                id: nowText
-                text: "NOW"
-                color: "white"
-                font {
-                    pixelSize: dimsFactor * 24
-                    family: "Fyodor"
-                }
-                anchors.centerIn: parent
-                visible: showingNow
-                opacity: 0
-                SequentialAnimation {
-                    id: nowTransition
-                    running: false
-                    NumberAnimation { target: nowText; property: "opacity"; from: 0; to: 1; duration: 500 }
-                    ParallelAnimation {
-                        NumberAnimation { target: nowText; property: "font.pixelSize"; from: dimsFactor * 24; to: dimsFactor * 48; duration: 1000; easing.type: Easing.OutQuad }
-                        NumberAnimation { target: nowText; property: "opacity"; from: 1; to: 0; duration: 1000; easing.type: Easing.OutQuad }
-                    }
-                }
-            }
-
-            Text {
-                id: surviveText
-                text: "SURVIVE"
-                color: "orange"
-                font {
-                    pixelSize: dimsFactor * 24
-                    family: "Fyodor"
-                }
-                anchors.centerIn: parent
-                visible: showingSurvive
-                opacity: 0
-                SequentialAnimation {
-                    id: surviveTransition
-                    running: false
-                    NumberAnimation { target: surviveText; property: "opacity"; from: 0; to: 1; duration: 500 }
-                    ParallelAnimation {
-                        NumberAnimation { target: surviveText; property: "font.pixelSize"; from: dimsFactor * 24; to: dimsFactor * 48; duration: 1000; easing.type: Easing.OutQuad }
-                        NumberAnimation { target: surviveText; property: "opacity"; from: 1; to: 0; duration: 1000; easing.type: Easing.OutQuad }
-                    }
+                z: 4
+                dimsFactor: root.dimsFactor
+                goScale: root.goScale
+                selectingDifficulty: root.selectingDifficulty
+                calibrating: root.calibrating
+                calibrationTimer: root.calibrationTimer
+                showingNow: root.showingNow
+                showingSurvive: root.showingSurvive
+                onDieNowClicked: function(difficultyName) {
+                    applyDifficulty(difficultyName)
+                    root.calibrationTimer = 2
+                    selectingDifficulty = false
+                    calibrating = true
                 }
             }
 
@@ -1817,10 +1672,9 @@ Item {
         playerHitbox.width = dimsFactor * 14
         playerHitbox.height = dimsFactor * 14
         clearPowerupBars()
-        nowTransition.stop()
+        preGame.stopIntros()
         nowText.font.pixelSize = dimsFactor * 13
         nowText.opacity = 0
-        surviveTransition.stop()
         surviveText.font.pixelSize = dimsFactor * 13
         surviveText.opacity = 0
         playerContainer.x = root.width / 2 - player.width / 2
