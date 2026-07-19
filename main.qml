@@ -162,12 +162,6 @@ Item {
         event: "press"
     }
 
-    Binding {
-        target: DisplayBlanking
-        property: "preventBlanking"
-        value: !gameOver
-    }
-
     Component {
         id: progressBarComponent
         Item {
@@ -1787,6 +1781,7 @@ Item {
     }
 
     function finishInitialization() {
+        DisplayBlanking.preventBlanking = true
         calibrationCountdownTimer.initializationDone = true
 
         // Preload a combo particle
