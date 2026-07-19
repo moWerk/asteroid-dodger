@@ -107,97 +107,8 @@ Item {
         { type: "autoFire",        weight: balance.weightAutoFire },
     ]
 
-    // ── Difficulty Presets ────────────────────────────────────────────────────
-    // Cadet = current baseline. Each step raises scroll speed, asteroid density
-    // and density-per-level linearly. Roadkill additionally has no invincibility
-    // pickup (weightInvincibility: 0).
-    property var difficultyPresets: ({
-        "Cadet Swerver": {
-            initialScrollSpeed:      1.6,
-            scrollSpeedPerLevel:     0.06,
-            initialAsteroidDensity:  0.20,
-            asteroidDensityPerLevel: 0.10,
-            powerupDensityFactor:    0.002,
-            weightInvincibility:     0.4
-        },
-        "Captain Slipstreamer": {
-            initialScrollSpeed:      1.9,
-            scrollSpeedPerLevel:     0.07,
-            initialAsteroidDensity:  0.28,
-            asteroidDensityPerLevel: 0.14,
-            powerupDensityFactor:    0.0016,
-            weightInvincibility:     0.4
-        },
-        "Commander Stardust": {
-            initialScrollSpeed:      2.2,
-            scrollSpeedPerLevel:     0.09,
-            initialAsteroidDensity:  0.36,
-            asteroidDensityPerLevel: 0.18,
-            powerupDensityFactor:    0.0014,
-            weightInvincibility:     0.25
-        },
-        "Major Roadkill": {
-            initialScrollSpeed:      2.6,
-            scrollSpeedPerLevel:     0.1,
-            initialAsteroidDensity:  0.44,
-            asteroidDensityPerLevel: 0.22,
-            powerupDensityFactor:    0.0012,
-            weightInvincibility:     0.0
-        }
-    })
-
-    // ── Game Balance ─────────────────────────────────────────────────────────
-    // Single source of truth for all gameplay tuning.
-    // The 6 non-readonly properties are written by applyDifficulty().
-    // All other properties are fixed and readonly.
-    QtObject {
-        id: balance
-
-        // Speed & Movement
-        property real initialScrollSpeed: 1.6
-        property real scrollSpeedPerLevel: 0.05
-        readonly property real playerSensitivity: 1.2
-        readonly property real speedBoostMultiplier: 2.0
-
-        // Level Progression
-        readonly property int  asteroidsPerLevel: 100
-        property real initialAsteroidDensity: 0.20
-        property real asteroidDensityPerLevel: 0.10
-        readonly property int  initialSpawnCooldown: 200
-        readonly property int  spawnCooldownPerLevel: 2
-        readonly property int  minSpawnCooldown: 100
-
-        // Power-up Global Density
-        property real powerupDensityFactor: 0.001
-
-        // Power-up Relative Weights
-        readonly property real weightShield: 1.6
-        property real weightInvincibility: 0.4
-        readonly property real weightSpeedBoost: 0.8
-        readonly property real weightScoreMultiplier: 0.8
-        readonly property real weightSlowMo: 1.0
-        readonly property real weightShrink: 1.0
-        readonly property real weightLaserSwipe: 0.4
-        readonly property real weightAutoFire: 0.8
-
-        // Power-up Durations (milliseconds)
-        readonly property int gracePeriodMs: 2000
-        readonly property int invincibilityMs: 10000
-        readonly property int speedBoostMs: 6000
-        readonly property int scoreMultiplierMs: 10000
-        readonly property int slowMoMs: 6000
-        readonly property int shrinkMs: 6000
-        readonly property int autoFireMs: 6000
-        readonly property int autoFireShots: 30
-
-        // Scoring
-        readonly property real scoreMultiplierValue: 2.0
-        readonly property int  comboWindowMs: 2000
-
-        // Shield
-        readonly property int initialShield: 2
-        readonly property int maxShield: 10
-    }
+    // Gameplay tuning + difficulty presets live in Balance.qml
+    Balance { id: balance }
 
     onPausedChanged: {
         if (paused) {
@@ -1582,14 +1493,7 @@ Item {
     // ── Functions ─────────────────────────────────────────────────────────────
 
     function applyDifficulty(name) {
-        var preset = difficultyPresets[name]
-        if (!preset) preset = difficultyPresets["Cadet Swerver"]
-        balance.initialScrollSpeed      = preset.initialScrollSpeed
-        balance.scrollSpeedPerLevel     = preset.scrollSpeedPerLevel
-        balance.initialAsteroidDensity  = preset.initialAsteroidDensity
-        balance.asteroidDensityPerLevel = preset.asteroidDensityPerLevel
-        balance.powerupDensityFactor    = preset.powerupDensityFactor
-        balance.weightInvincibility     = preset.weightInvincibility
+        var preset = balance.apply(name)
         scrollSpeed      = preset.initialScrollSpeed
         savedScrollSpeed = preset.initialScrollSpeed
         currentDifficulty = name
