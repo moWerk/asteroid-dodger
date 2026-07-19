@@ -1673,10 +1673,6 @@ Item {
         playerHitbox.height = dimsFactor * 14
         clearPowerupBars()
         preGame.stopIntros()
-        nowText.font.pixelSize = dimsFactor * 13
-        nowText.opacity = 0
-        surviveText.font.pixelSize = dimsFactor * 13
-        surviveText.opacity = 0
         playerContainer.x = root.width / 2 - player.width / 2
         gameOverScreen.opacity = 0
         lastFrameTime = 0
