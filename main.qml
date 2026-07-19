@@ -17,13 +17,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.9
-import QtSensors 5.15
-import Nemo.Ngf 1.0
-import QtQuick.Shapes 1.15
-import org.asteroid.controls 1.0
-import org.asteroid.dodger 1.0
-import Nemo.KeepAlive 1.1
+import QtQuick
+import QtSensors
+import Nemo.Ngf
+import QtQuick.Shapes
+import org.asteroid.controls
+import org.asteroid.dodger
+import Nemo.KeepAlive
 
 Item {
     id: root
@@ -1742,7 +1742,7 @@ Item {
                     continue
                 }
                 if (obj.type === "shield" && isColliding(playerHitbox, obj)) {
-                    shield = Math.min(balance.maxShield, shield + 1)
+                    shield = Math.min(balance.maxShield, shield + 1) | 0
                     flashOverlay.triggerFlash("blue")
                     obj.visible = false
                     continue
