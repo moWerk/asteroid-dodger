@@ -149,7 +149,7 @@ Item {
 
             var model = []
             model.push({ rowType: "current", name: currentDifficulty, score: score, level: level })
-            model.push({ rowType: "header" })
+            model.push({ rowType: "header", name: "", score: 0, level: 0 })
             for (var j = 0; j < entries.length; j++) {
                 model.push({ rowType: "history", name: entries[j].name, score: entries[j].score, level: entries[j].level })
             }
@@ -1228,164 +1228,15 @@ Item {
         // ListView declared first (lowest paint order) so "Game Over!" text
         // and "Die Again" button float above it without a z: hack.
 
-        Item {
+        GameOverPage {
             id: gameOverScreen
             anchors.fill: parent
             z: 5
-            visible: gameOver
-            opacity: 0
-            Behavior on opacity {
-                NumberAnimation { duration: 250 }
-            }
-            onVisibleChanged: {
-                if (visible) {
-                    opacity = 1
-                } else {
-                    opacity = 0
-                }
-            }
-            
-            Rectangle {
-                anchors.fill: parent
-                color: "black"
-                opacity: 0.72
-            }
-            
-            // Scrollable results list
-            ListView {
-                id: goList
-                anchors {
-                    fill: parent
-                    leftMargin: dimsFactor * 15
-                    rightMargin: dimsFactor * 15
-                    topMargin: dimsFactor * 22
-                    bottomMargin: dimsFactor * 28
-                }
-                model: goModel
-                spacing: 0
-
-                delegate: Item {
-                    width: ListView.view ? ListView.view.width : 0
-                    height: !modelData ? 0 :
-                            modelData.rowType === "header" ? dimsFactor * 12 : dimsFactor * 24
-
-                    // Current run row
-                    Column {
-                        visible: modelData && modelData.rowType === "current"
-                        anchors.centerIn: parent
-                        spacing: dimsFactor * 1
-
-                        Text {
-                            text: modelData ? modelData.name : ""
-                            color: "#dddddd"
-                            font { pixelSize: dimsFactor * 8; bold: true; family: "Fyodor" }
-                            anchors.horizontalCenter: parent.horizontalCenter
-                        }
-                        Row {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: dimsFactor * 7
-                            Text {
-                                text: "Score  " + (modelData ? modelData.score : 0)
-                                color: "white"
-                                font.pixelSize: dimsFactor * 6
-                                font.bold: true
-                            }
-                            Text {
-                                text: "Level  " + (modelData ? modelData.level : 0)
-                                color: "white"
-                                font.pixelSize: dimsFactor * 6
-                                font.bold: true
-                            }
-                        }
-                    }
-
-                    // Highscore header row
-                    Text {
-                        visible: modelData && modelData.rowType === "header"
-                        text: "Highscore"
-                        color: "#888888"
-                        font { pixelSize: dimsFactor * 8; family: "Fyodor" }
-                        anchors.centerIn: parent
-                    }
-
-                    // Historical difficulty row
-                    Column {
-                        visible: modelData && modelData.rowType === "history"
-                        anchors.centerIn: parent
-                        spacing: dimsFactor * 1
-                        
-                        Text {
-                            text: modelData ? modelData.name : ""
-                            color: "#cccccc"
-                            font.pixelSize: dimsFactor * 6
-                            anchors.horizontalCenter: parent.horizontalCenter
-                        }
-                        Row {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: dimsFactor * 7
-                            Text {
-                                text: "Score  " + (modelData ? modelData.score : 0)
-                                color: "white"
-                                font.pixelSize: dimsFactor * 6
-                            }
-                            Text {
-                                text: "Level  " + (modelData ? modelData.level : 0)
-                                color: "white"
-                                font.pixelSize: dimsFactor * 6
-                            }
-                        }
-                    }
-                }
-            }
-
-            // "Game Over!" floats above the list — declared after ListView
-            Text {
-                text: "Game Over!"
-                color: "red"
-                font {
-                    pixelSize: Math.round(dimsFactor * 8 * goScale)
-                    bold: true
-                }
-                anchors {
-                    top: parent.top
-                    topMargin: dimsFactor * 6
-                    horizontalCenter: parent.horizontalCenter
-                }
-            }
-
-            // "Die Again" button — declared last, MouseArea never covered
-            Rectangle {
-                id: tryAgainButton
-                width: Math.round(dimsFactor * 42 * goScale)
-                height: Math.round(dimsFactor * 14 * goScale)
-                color: "green"
-                border.color: "white"
-                border.width: Math.round(dimsFactor * 1 * goScale)
-                radius: Math.round(dimsFactor * 3 * goScale)
-                anchors {
-                    bottom: parent.bottom
-                    bottomMargin: dimsFactor * 8
-                    horizontalCenter: parent.horizontalCenter
-                }
-
-                Text {
-                    text: "Die Again"
-                    color: "white"
-                    font {
-                        pixelSize: Math.round(dimsFactor * 6 * goScale)
-                        bold: true
-                    }
-                    anchors.centerIn: parent
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: gameOver
-                    onClicked: {
-                        restartGame()
-                    }
-                }
-            }
+            model: goModel
+            dimsFactor: root.dimsFactor
+            goScale: root.goScale
+            active: gameOver
+            onRestartClicked: restartGame()
         }
 
         Component {

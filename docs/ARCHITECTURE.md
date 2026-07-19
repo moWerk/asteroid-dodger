@@ -16,6 +16,10 @@ Balance.qml       ALL gameplay tuning + difficulty presets. QtObject,
                   effects of a difficulty switch (scroll speed reset,
                   persistence, powerup weight table) stay in main.qml's
                   applyDifficulty()
+GameOverPage.qml  game-over overlay: dimmed backdrop, current-run
+                  summary, per-difficulty leaderboard, restart button.
+                  Interface: model/dimsFactor/goScale/active in,
+                  restartClicked() out
 ValueCycler.qml   tap-to-cycle selector control
 DeathShader.qml   self-contained death effect; pre-baked qsb shader in
                   shaders/ (source beside it)
