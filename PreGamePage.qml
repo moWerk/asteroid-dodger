@@ -16,6 +16,7 @@
  */
 
 import QtQuick
+import org.asteroid.dodger
 
 // Pre-game flow: title, difficulty selection, calibration countdown and
 // the NOW/SURVIVE intro flashes. Display + one decision: the die-now tap
