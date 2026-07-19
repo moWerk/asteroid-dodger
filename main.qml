@@ -1793,6 +1793,10 @@ Item {
             "y": -dimsFactor * 10,
             "points": 1
         })
+        var preloadIndex = activeParticles.indexOf(preloadParticle)
+        if (preloadIndex !== -1) {
+            activeParticles.splice(preloadIndex, 1)
+        }
         preloadParticle.destroy(100)
 
         // Preload a power-up bar
