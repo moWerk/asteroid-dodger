@@ -23,7 +23,7 @@ import Nemo.Ngf
 import QtQuick.Shapes
 import org.asteroid.controls
 import org.asteroid.dodger
-import Nemo.KeepAlive
+import Nemo.KeepAlive 1.1
 
 Item {
     id: root
