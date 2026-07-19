@@ -23,7 +23,7 @@ import Nemo.Ngf
 import QtQuick.Shapes
 import org.asteroid.controls
 import org.asteroid.dodger
-import Nemo.KeepAlive 1.1
+import Nemo.KeepAlive
 
 Item {
     id: root
@@ -161,6 +161,9 @@ Item {
         id: feedback
         event: "press"
     }
+
+    // KeepAlive 1.2 API: DisplayBlanking is instantiable, not a singleton.
+    DisplayBlanking { id: displayBlanking }
 
     Component {
         id: progressBarComponent
@@ -1781,7 +1784,7 @@ Item {
     }
 
     function finishInitialization() {
-        DisplayBlanking.preventBlanking = true
+        displayBlanking.preventBlanking = true
         calibrationCountdownTimer.initializationDone = true
 
         // Preload a combo particle
