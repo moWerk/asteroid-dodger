@@ -1501,7 +1501,6 @@ Item {
                                 "y": objY,
                                 "points": 100 * scoreMultiplier
                             })
-                            activeParticles.push(particle)
                         } else {
                             obj.visible = false
                         }
