@@ -957,8 +957,8 @@ Item {
                 onDieNowClicked: function(difficultyName) {
                     applyDifficulty(difficultyName)
                     root.calibrationTimer = 2
-                    selectingDifficulty = false
-                    calibrating = true
+                    root.selectingDifficulty = false
+                    root.calibrating = true
                 }
             }
 
