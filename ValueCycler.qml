@@ -42,8 +42,15 @@ Item {
         width: parent.width
     }
 
+    // The press highlight extends past the text container by exactly its
+    // corner radius per side, so the rounded ends lie fully outside the
+    // width that word-wraps long difficulty names.
     HighlightBar {
-        anchors.fill: parent
+        anchors.fill: undefined
+        anchors.centerIn: parent
+        width: parent.width + 2 * radius
+        height: parent.height
+        radius: Dims.l(5.5)
         onClicked: {
             if (valueArray.length === 0) return
             var i    = valueArray.indexOf(currentValue)
