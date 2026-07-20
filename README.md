@@ -75,6 +75,19 @@ four tiers.
 
 AsteroidOS 2.0 — Qt 5.15
 
+## Disclosure
+
+The 2.0 rework and OOP refactor were heavily LLM-driven. The session
+transcripts are long gone, so not one assurance flag can be evidenced —
+and per [LLMGD](https://github.com/moWerk/llmgd-specs), what can't be
+proven takes the floor. Self-graded to the drowned sub, and worn with a
+grin.
+
+```
+Disclosure: LLMGD-0 (LLM-driven; transcript lost, nothing provable, floored)
+LLMGD: v0.1; origin=O0; assurance=none; scope=code+docs; graded-by=self; retrieval=logs-lost
+```
+
 ---
 
 ### 2.0 gameplay:
