@@ -24,6 +24,35 @@ ApplicationWindow {
 
     allowedOrientations: Orientation.Portrait
 
+    // The play field lives in the page while the app is in front. When the
+    // app goes to the background the game is paused and the same scene is
+    // moved into the cover, scaled down. The cover's action resumes it
+    // there, so the game can be played on the home screen.
+    property Item stageItem: null
+    property Item stageHome: null
+    property Item coverHolder: null
+
+    function placeStage() {
+        if (!stageItem) return
+        if (applicationActive || !coverHolder) {
+            if (stageItem.parent !== stageHome) {
+                stageItem.parent = stageHome
+                stageItem.scale = 1
+            }
+        } else {
+            stageItem.parent = coverHolder
+            stageItem.scale = Math.min(coverHolder.width / stageItem.width,
+                                       coverHolder.height / stageItem.height)
+        }
+    }
+
+    onApplicationActiveChanged: {
+        if (!applicationActive && stageItem && stageItem.game)
+            stageItem.game.setPaused(true)
+        placeStage()
+    }
+    onCoverHolderChanged: placeStage()
+
     initialPage: Component {
         Page {
             id: page
@@ -43,6 +72,7 @@ ApplicationWindow {
 
             Item {
                 id: stage
+                property Item game: gameLoader.item
                 width: page.squareStage ? Math.min(page.width, page.height) : page.width
                 height: page.squareStage ? width : page.height
                 anchors.centerIn: parent
@@ -54,6 +84,11 @@ ApplicationWindow {
                     active: false
                     source: "game/main.qml"
                 }
+            }
+
+            Component.onCompleted: {
+                app.stageHome = page
+                app.stageItem = stage
             }
 
             // The game reads its scale once at start, so the size has to
@@ -70,9 +105,36 @@ ApplicationWindow {
 
     cover: Component {
         CoverBackground {
+            Rectangle {
+                anchors.fill: parent
+                color: "black"
+            }
+
+            // the play field is moved in here while the app is in the background
+            Item {
+                id: holder
+                anchors.fill: parent
+                clip: true
+                Component.onCompleted: app.coverHolder = holder
+                Component.onDestruction: app.coverHolder = null
+            }
+
             Label {
                 anchors.centerIn: parent
                 text: "Dodger"
+                visible: !app.stageItem || app.stageItem.parent !== holder
+            }
+
+            CoverActionList {
+                enabled: app.stageItem !== null && app.stageItem.game !== null
+                         && !app.stageItem.game.gameOver && !app.stageItem.game.inPreGame
+
+                CoverAction {
+                    iconSource: app.stageItem && app.stageItem.game && app.stageItem.game.paused
+                                ? "image://theme/icon-cover-play"
+                                : "image://theme/icon-cover-pause"
+                    onTriggered: app.stageItem.game.setPaused(!app.stageItem.game.paused)
+                }
             }
         }
     }

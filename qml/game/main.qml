@@ -178,7 +178,12 @@ Item {
     }
 
     // KeepAlive 1.2 API: DisplayBlanking is instantiable, not a singleton.
-    DisplayBlanking { id: displayBlanking }
+    // Keep the display on only while a round is running. Paused, on the
+    // start page or after game over it may blank as usual.
+    DisplayBlanking {
+        id: displayBlanking
+        preventBlanking: gameTimer.running && !root.paused
+    }
 
     Component {
         id: progressBarComponent
@@ -1266,6 +1271,14 @@ Item {
         ]
     }
 
+    // Pause or resume from outside the game scene (app sent to the
+    // background, cover action). Does nothing outside a running round.
+    function setPaused(on) {
+        if (gameOver || inPreGame) return
+        paused = on
+        pauseText.opacity = on ? 1.0 : 0.0
+    }
+
     // Names and colours for the power-up callout. Colours match the "!" marks.
     function showPowerupCallout(type) {
         var names = {
@@ -1881,7 +1894,6 @@ Item {
     }
 
     function finishInitialization() {
-        displayBlanking.preventBlanking = true
         calibrationCountdownTimer.initializationDone = true
 
         // Preload a combo particle
