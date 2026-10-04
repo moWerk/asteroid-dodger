@@ -60,6 +60,10 @@ Item {
             }
             anchors.horizontalCenter: parent.horizontalCenter
             horizontalAlignment: Text.AlignHCenter
+            // never wider than the screen
+            width: page.width - dimsFactor * 8
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: dimsFactor * 6
         }
     }
 
@@ -138,9 +142,11 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
             Text {
-                text: "Hold your watch comfy"
+                text: "Hold your phone comfy"
                 color: "white"
                 font.pixelSize: dimsFactor * 6
+                width: page.width - dimsFactor * 8
+                wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
                 anchors.horizontalCenter: parent.horizontalCenter
             }
@@ -165,6 +171,9 @@ Item {
             family: "Fyodor"
         }
         anchors.centerIn: parent
+        width: page.width - dimsFactor * 4
+        horizontalAlignment: Text.AlignHCenter
+        fontSizeMode: Text.HorizontalFit
         visible: showingNow
         opacity: 0
         SequentialAnimation {
@@ -187,6 +196,9 @@ Item {
             family: "Fyodor"
         }
         anchors.centerIn: parent
+        width: page.width - dimsFactor * 4
+        horizontalAlignment: Text.AlignHCenter
+        fontSizeMode: Text.HorizontalFit
         visible: showingSurvive
         opacity: 0
         SequentialAnimation {

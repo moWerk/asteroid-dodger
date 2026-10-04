@@ -17,6 +17,7 @@
 
 
 #include <sailfishapp.h>
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QQuickView>
 #include <QScopedPointer>
@@ -33,6 +34,12 @@ int main(int argc, char *argv[])
         "org.asteroid.dodger", 1, 0,
         "DodgerStorage",
         DodgerStorage::qmlInstance);
+
+    // The game asks for the font "Fyodor" by name. AsteroidOS has it
+    // system wide, here it comes with the app. It has to be known before
+    // the first Text is created.
+    QFontDatabase::addApplicationFont(
+        SailfishApp::pathTo(QStringLiteral("qml/game/fonts/Fyodor-BoldCondensed.ttf")).toLocalFile());
 
     QScopedPointer<QQuickView> view(SailfishApp::createView());
     view->setSource(SailfishApp::pathToMainQml());

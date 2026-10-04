@@ -71,11 +71,11 @@ Item {
     property int  asteroidCount: 0
     property real asteroidDensity: balance.initialAsteroidDensity + (level - 1) * balance.asteroidDensityPerLevel
     property var  asteroidPool: []
-    property int  asteroidPoolSize: 40
+    property int  asteroidPoolSize: Math.ceil(40 * fieldAspect)
     property int  asteroidsPerLevel: balance.asteroidsPerLevel
     property real largeAsteroidDensity: asteroidDensity / 3
     property var  largeAsteroidPool: []
-    property int  largeAsteroidPoolSize: 10
+    property int  largeAsteroidPoolSize: Math.ceil(10 * fieldAspect)
     property real lastAsteroidSpawn: 0
     property real lastLargeAsteroidSpawn: 0
     property real lastObjectSpawn: 0
@@ -84,6 +84,16 @@ Item {
     // --- Visual and Timing Settings ---
     property real   baselineX: 0
     property real   dimsFactor: Dims.l(100) / 100
+    // Scroll speeds are tuned in pixels per frame on a watch. Scale them
+    // with the field so that a wider screen is not slower: 1.0 at 480 px
+    // width, 1.5 on a 720 px wide phone.
+    property real   speedScale: Dims.l(100) / 480
+    // On a watch the field is as tall as it is wide. A tall field keeps
+    // objects on screen longer, so it needs more of them.
+    property real   fieldAspect: Math.max(1, Dims.height / Dims.width)
+    // HUD bars: a phone has no round bezel at the top
+    property real   hudBarWidth: dimsFactor * 70
+    property real   hudBarHeight: dimsFactor * 3
     property real   goScale: 1.2
     property string flashColor: ""
     property real   lastFrameTime: 0
@@ -173,8 +183,8 @@ Item {
             property string fillColor: "#FFD700"
             property string bgColor: "#45220A"
             property int    duration: 0
-            width: dimsFactor * 28
-            height: dimsFactor * 2
+            width: hudBarWidth
+            height: hudBarHeight
 
             Rectangle {
                 width: parent.width
@@ -698,7 +708,7 @@ Item {
                     id: player
                     width: dimsFactor * 10
                     height: dimsFactor * 10
-                    source: "file:///usr/share/asteroid-launcher/watchfaces-img/asteroid-logo.svg"
+                    source: "img/asteroid-logo.png"
                     anchors.centerIn: parent
                     opacity: playerDying ? Math.max(0, 1.0 - deathProgress * 1.4) : 1.0
 
@@ -787,8 +797,8 @@ Item {
 
                 Item {
                     id: levelProgressBar
-                    width: dimsFactor * 28
-                    height: dimsFactor * 2
+                    width: hudBarWidth
+                    height: hudBarHeight
                     anchors.horizontalCenter: parent.horizontalCenter
 
                     Rectangle {
@@ -1204,8 +1214,16 @@ Item {
         ]
     }
 
+    // Array.findIndex() does not exist in Qt 5.6
+    function powerupIndex(type) {
+        for (var i = 0; i < activePowerups.length; i++) {
+            if (activePowerups[i].type === type) return i
+        }
+        return -1
+    }
+
     function addPowerupBar(type, duration, color, bgColor) {
-        var existingIndex = activePowerups.findIndex(function(p) { return p.type === type })
+        var existingIndex = powerupIndex(type)
         if (existingIndex !== -1) {
             var existing = activePowerups[existingIndex]
             if (existing.bar && existing.bar.parent) {
@@ -1229,7 +1247,7 @@ Item {
     }
 
     function removePowerup(type) {
-        var index = activePowerups.findIndex(function(p) { return p.type === type })
+        var index = powerupIndex(type)
         if (index !== -1) {
             var powerup = activePowerups[index]
             if (powerup.bar) {
@@ -1251,7 +1269,7 @@ Item {
     function updateGame(deltaTime) {
         if (!playerContainer || !playerHitbox || !gameArea) return
 
-        var adjustedScrollSpeed = scrollSpeed * deltaTime * 60
+        var adjustedScrollSpeed = scrollSpeed * speedScale * deltaTime * 60
         var largeAsteroidSpeed = adjustedScrollSpeed / 3
         var currentTime = Date.now()
         var effectiveSpawnCooldown = isSlowMoActive ? spawnCooldown * 2 : spawnCooldown
@@ -1567,6 +1585,7 @@ Item {
                 // place a power-up inside an asteroid.
                 var chosenX = -1
                 var clearance = dimsFactor * 7
+                var spawnBand = dimsFactor * 50
                 var maxTries = type === "asteroid" ? 1 : 8
                 for (var attempt = 0; attempt < maxTries; attempt++) {
                     var candidateX = Math.random() * (root.width - obj.width)
@@ -1577,7 +1596,10 @@ Item {
                     var clear = true
                     for (var k = 0; k < asteroidPool.length; k++) {
                         var ast = asteroidPool[k]
-                        if (ast.visible && ast.type === "asteroid") {
+                        // Only asteroids near the spawn edge can collide with a
+                        // new power-up. On a tall field, counting every visible
+                        // asteroid leaves no free position and power-ups starve.
+                        if (ast.visible && ast.type === "asteroid" && ast.y < spawnBand) {
                             if (Math.abs((candidateX + obj.width / 2) - (ast.x + ast.width / 2)) < clearance) {
                                 clear = false
                                 break

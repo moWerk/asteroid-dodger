@@ -1,0 +1,6 @@
+asteroid-logo.svg: the AsteroidOS logo, from
+https://github.com/AsteroidOS/asteroid-launcher (src/watchfaces-img/).
+On a watch the game reads it from the launcher's files. SailfishOS has
+no such file, so it is shipped here.
+asteroid-logo.png: the same, rendered to 512 px, because Qt 5.6 does
+not draw this SVG (it uses <use href>).
