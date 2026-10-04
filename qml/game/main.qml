@@ -96,6 +96,9 @@ Item {
     property real   hudBarHeight: dimsFactor * 3
     // Where the usable screen starts below the camera notch (Jolla C2).
     property real   hudSafeTop: dimsFactor * 6
+    // Top of the level number: two bar heights below the notch.
+    property real   hudTop: hudSafeTop + 2 * hudBarHeight
+    property real   hudBarSpacing: dimsFactor * 1.5
     property real   goScale: 1.2
     property string flashColor: ""
     property real   lastFrameTime: 0
@@ -793,7 +796,7 @@ Item {
                     top: parent.top
                     horizontalCenter: parent.horizontalCenter
                     // the level bar sits behind the middle of the level number
-                    topMargin: hudSafeTop + hudBarHeight + (levelNumber.height - hudBarHeight) / 2
+                    topMargin: hudTop + (levelNumber.height - hudBarHeight) / 2
                 }
                 z: 4
                 visible: !gameOver && !inPreGame
@@ -824,10 +827,10 @@ Item {
                     id: powerupBars
                     anchors {
                         top: levelProgressBar.bottom
-                        topMargin: dimsFactor * 1
+                        topMargin: hudBarSpacing
                         horizontalCenter: parent.horizontalCenter
                     }
-                    spacing: dimsFactor * 1
+                    spacing: hudBarSpacing
                 }
             }
 
@@ -839,14 +842,58 @@ Item {
                     pixelSize: dimsFactor * 9
                     family: "Fyodor"
                 }
-                // one bar height below the notch
+                // two bar heights below the notch. The anchor has to be the
+                // parent: root is not a parent or sibling here, and QML drops
+                // such an anchor with a warning.
                 anchors {
-                    top: root.top
-                    topMargin: hudSafeTop + hudBarHeight
+                    top: parent.top
+                    topMargin: hudTop
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
                 visible: !gameOver && !inPreGame
+            }
+
+            // Phone only: shouts the name of a collected power-up into the
+            // free space below the HUD. Two quick pumps, then it dissolves.
+            Text {
+                id: powerupCallout
+                color: "white"
+                font {
+                    pixelSize: dimsFactor * 16
+                    family: "Fyodor"
+                }
+                anchors {
+                    top: parent.top
+                    topMargin: hudTop + dimsFactor * 44
+                    horizontalCenter: parent.horizontalCenter
+                }
+                z: 4
+                opacity: 0
+                visible: opacity > 0 && !gameOver && !inPreGame
+
+                function shout(name, tint) {
+                    calloutAnimation.stop()
+                    text = name
+                    color = tint
+                    calloutAnimation.start()
+                }
+
+                SequentialAnimation {
+                    id: calloutAnimation
+                    ParallelAnimation {
+                        NumberAnimation { target: powerupCallout; property: "opacity"; from: 0; to: 1; duration: 60 }
+                        NumberAnimation { target: powerupCallout; property: "scale"; from: 0.5; to: 1.3; duration: 90; easing.type: Easing.OutQuad }
+                    }
+                    NumberAnimation { target: powerupCallout; property: "scale"; to: 0.9; duration: 80; easing.type: Easing.InOutQuad }
+                    NumberAnimation { target: powerupCallout; property: "scale"; to: 1.4; duration: 90; easing.type: Easing.OutQuad }
+                    NumberAnimation { target: powerupCallout; property: "scale"; to: 1.0; duration: 80; easing.type: Easing.InOutQuad }
+                    PauseAnimation { duration: 220 }
+                    ParallelAnimation {
+                        NumberAnimation { target: powerupCallout; property: "scale"; to: 2.2; duration: 320; easing.type: Easing.OutQuad }
+                        NumberAnimation { target: powerupCallout; property: "opacity"; to: 0; duration: 320; easing.type: Easing.OutQuad }
+                    }
+                }
             }
 
             Item {
@@ -1219,6 +1266,31 @@ Item {
         ]
     }
 
+    // Names and colours for the power-up callout. Colours match the "!" marks.
+    function showPowerupCallout(type) {
+        var names = {
+            "shield":          "SHIELD",
+            "invincibility":   "INVINCIBLE",
+            "speedBoost":      "SPEED BOOST",
+            "scoreMultiplier": "DOUBLE SCORE",
+            "shrink":          "SHRINK",
+            "slowMo":          "SLOW MO",
+            "laserSwipe":      "LASER SWIPE",
+            "autoFire":        "AUTO FIRE"
+        }
+        var tints = {
+            "shield":          "#0087ff",
+            "invincibility":   "#FF69B4",
+            "speedBoost":      "#FFFF00",
+            "scoreMultiplier": "#00CC00",
+            "shrink":          "#FFA500",
+            "slowMo":          "#00FFFF",
+            "laserSwipe":      "red",
+            "autoFire":        "#800080"
+        }
+        powerupCallout.shout(names[type] || type, tints[type] || "white")
+    }
+
     // Array.findIndex() does not exist in Qt 5.6
     function powerupIndex(type) {
         for (var i = 0; i < activePowerups.length; i++) {
@@ -1362,12 +1434,14 @@ Item {
                     continue
                 }
                 if (obj.type === "shield" && isColliding(playerHitbox, obj)) {
+                    showPowerupCallout("shield")
                     shield = Math.min(balance.maxShield, shield + 1) | 0
                     flashOverlay.triggerFlash("blue")
                     obj.visible = false
                     continue
                 }
                 if (obj.type === "invincibility" && isColliding(playerHitbox, obj)) {
+                    showPowerupCallout("invincibility")
                     invincible = true
                     isInvincibleActive = true
                     invincibilityTimer.restart()
@@ -1377,6 +1451,7 @@ Item {
                     continue
                 }
                 if (obj.type === "speedBoost" && isColliding(playerHitbox, obj)) {
+                    showPowerupCallout("speedBoost")
                     playerSpeed = balance.playerSensitivity * balance.speedBoostMultiplier
                     isSpeedBoostActive = true
                     speedBoostTimer.restart()
@@ -1386,6 +1461,7 @@ Item {
                     continue
                 }
                 if (obj.type === "scoreMultiplier" && isColliding(playerHitbox, obj)) {
+                    showPowerupCallout("scoreMultiplier")
                     scoreMultiplier = balance.scoreMultiplierValue
                     scoreMultiplierTimer.restart()
                     flashOverlay.triggerFlash("#00CC00")
@@ -1394,6 +1470,7 @@ Item {
                     continue
                 }
                 if (obj.type === "shrink" && isColliding(playerHitbox, obj)) {
+                    showPowerupCallout("shrink")
                     player.width = dimsFactor * 5
                     player.height = dimsFactor * 5
                     playerHitbox.width = dimsFactor * 7
@@ -1406,6 +1483,7 @@ Item {
                     continue
                 }
                 if (obj.type === "slowMo" && isColliding(playerHitbox, obj)) {
+                    showPowerupCallout("slowMo")
                     if (!isSlowMoActive) {
                         preSlowSpeed = scrollSpeed
                         scrollSpeed = preSlowSpeed / 2
@@ -1419,6 +1497,7 @@ Item {
                     continue
                 }
                 if (obj.type === "laserSwipe" && isColliding(playerHitbox, obj)) {
+                    showPowerupCallout("laserSwipe")
                     flashOverlay.triggerFlash("red")
                     if (!activeLaser) {
                         activeLaser = laserSwipeComponent.createObject(gameArea)
@@ -1427,6 +1506,7 @@ Item {
                     continue
                 }
                 if (obj.type === "autoFire" && isColliding(playerHitbox, obj)) {
+                    showPowerupCallout("autoFire")
                     flashOverlay.triggerFlash("#800080")
                     if (!isAutoFireActive) {
                         var shot = autoFireShotComponent.createObject(gameArea, {
