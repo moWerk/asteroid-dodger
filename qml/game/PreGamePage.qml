@@ -41,17 +41,18 @@ Item {
     function playSurvive() { surviveTransition.start() }
     function stopIntros()  { nowTransition.stop(); surviveTransition.stop() }
 
-    Item {
-        id: titleText
-        anchors {
-            top: parent.top
-            topMargin: dimsFactor * 10
-            horizontalCenter: parent.horizontalCenter
-        }
+    // Title, difficulty selection or calibration, start button: one block,
+    // centred vertically. A phone screen is tall, a watch is not.
+    Column {
+        id: startBlock
+        anchors.centerIn: parent
+        width: parent.width
+        spacing: dimsFactor * 10
         z: 4
         visible: calibrating || selectingDifficulty
 
         Text {
+            id: titleText
             text: "v2.0\nAsteroid Dodger"
             color: "#dddddd"
             font {
@@ -65,22 +66,11 @@ Item {
             fontSizeMode: Text.HorizontalFit
             minimumPixelSize: dimsFactor * 6
         }
-    }
 
-    Item {
-        id: calibrationContainer
-        anchors.fill: parent
-        visible: calibrating || selectingDifficulty
-
-        // ── Difficulty selector — shown on startup ────────────────────
         Column {
             id: difficultySelector
-            anchors {
-                horizontalCenter: parent.horizontalCenter
-                top: parent.top
-                topMargin: parent.height * 0.42
-            }
-            spacing: dimsFactor * 4
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: dimsFactor * 10
             visible: selectingDifficulty
 
             ValueCycler {
@@ -99,7 +89,7 @@ Item {
                 height: Math.round(dimsFactor * 14 * goScale)
                 color: "green"
                 border.color: "white"
-                border.width: Math.round(dimsFactor * 1 * goScale)
+                border.width: Math.round(dimsFactor * 0.7 * goScale)
                 radius: Math.round(dimsFactor * 3 * goScale)
                 anchors.horizontalCenter: parent.horizontalCenter
 
@@ -120,13 +110,9 @@ Item {
             }
         }
 
-        // ── Calibration countdown — shown after Die Now ───────────────
         Column {
             id: calibrationText
-            anchors {
-                top: parent.verticalCenter
-                horizontalCenter: parent.horizontalCenter
-            }
+            anchors.horizontalCenter: parent.horizontalCenter
             spacing: dimsFactor * 1
             visible: calibrating
             opacity: showingNow ? 0 : 1
@@ -160,8 +146,6 @@ Item {
         }
     }
 
-    // ── Intro transitions ─────────────────────────────────────────────
-
     Text {
         id: nowText
         text: "NOW"
@@ -170,10 +154,8 @@ Item {
             pixelSize: dimsFactor * 24
             family: "Fyodor"
         }
+        // grows past the screen edges on purpose
         anchors.centerIn: parent
-        width: page.width - dimsFactor * 4
-        horizontalAlignment: Text.AlignHCenter
-        fontSizeMode: Text.HorizontalFit
         visible: showingNow
         opacity: 0
         SequentialAnimation {
@@ -195,10 +177,8 @@ Item {
             pixelSize: dimsFactor * 24
             family: "Fyodor"
         }
+        // grows past the screen edges on purpose
         anchors.centerIn: parent
-        width: page.width - dimsFactor * 4
-        horizontalAlignment: Text.AlignHCenter
-        fontSizeMode: Text.HorizontalFit
         visible: showingSurvive
         opacity: 0
         SequentialAnimation {

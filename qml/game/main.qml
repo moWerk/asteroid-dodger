@@ -94,6 +94,8 @@ Item {
     // HUD bars: a phone has no round bezel at the top
     property real   hudBarWidth: dimsFactor * 70
     property real   hudBarHeight: dimsFactor * 3
+    // Where the usable screen starts below the camera notch (Jolla C2).
+    property real   hudSafeTop: dimsFactor * 6
     property real   goScale: 1.2
     property string flashColor: ""
     property real   lastFrameTime: 0
@@ -790,7 +792,8 @@ Item {
                 anchors {
                     top: parent.top
                     horizontalCenter: parent.horizontalCenter
-                    topMargin: dimsFactor * 6
+                    // the level bar sits behind the middle of the level number
+                    topMargin: hudSafeTop + hudBarHeight + (levelNumber.height - hudBarHeight) / 2
                 }
                 z: 4
                 visible: !gameOver && !inPreGame
@@ -836,8 +839,10 @@ Item {
                     pixelSize: dimsFactor * 9
                     family: "Fyodor"
                 }
+                // one bar height below the notch
                 anchors {
                     top: root.top
+                    topMargin: hudSafeTop + hudBarHeight
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
@@ -1127,7 +1132,7 @@ Item {
                 Item {
                     id: asteroidShape
                     visible: type === "asteroid" && !dodged
-                    property real sizeFactor: 0.8 + Math.random() * 0.4
+                    property real sizeFactor: 1 - balance.asteroidSizeSpread / 2 + Math.random() * balance.asteroidSizeSpread
                     width: dimsFactor * 3 * sizeFactor
                     height: dimsFactor * 3 * sizeFactor
                     anchors.centerIn: parent

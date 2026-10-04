@@ -52,136 +52,137 @@ Item {
     }
 
     // Scrollable results list
-    ListView {
-        id: goList
-        anchors {
-            fill: parent
-            leftMargin: page.dimsFactor * 15
-            rightMargin: page.dimsFactor * 15
-            topMargin: page.dimsFactor * 22
-            bottomMargin: page.dimsFactor * 28
-        }
-        model: page.model
-        spacing: 0
-
-        delegate: Item {
-            width: ListView.view ? ListView.view.width : 0
-            height: !modelData ? 0 :
-                    modelData.rowType === "header" ? page.dimsFactor * 12 : page.dimsFactor * 24
-
-            // Current run row
-            Column {
-                visible: modelData && modelData.rowType === "current"
-                anchors.centerIn: parent
-                spacing: page.dimsFactor * 1
-
-                Text {
-                    text: modelData ? modelData.name : ""
-                    color: "#dddddd"
-                    font { pixelSize: page.dimsFactor * 8; bold: true; family: "Fyodor" }
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
-                Row {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: page.dimsFactor * 7
-                    Text {
-                        text: "Score  " + (modelData ? modelData.score : 0)
-                        color: "white"
-                        font.pixelSize: page.dimsFactor * 6
-                        font.bold: true
-                    }
-                    Text {
-                        text: "Level  " + (modelData ? modelData.level : 0)
-                        color: "white"
-                        font.pixelSize: page.dimsFactor * 6
-                        font.bold: true
-                    }
-                }
-            }
-
-            // Highscore header row
-            Text {
-                visible: modelData && modelData.rowType === "header"
-                text: "Highscore"
-                color: "#888888"
-                font { pixelSize: page.dimsFactor * 8; family: "Fyodor" }
-                anchors.centerIn: parent
-            }
-
-            // Historical difficulty row
-            Column {
-                visible: modelData && modelData.rowType === "history"
-                anchors.centerIn: parent
-                spacing: page.dimsFactor * 1
-
-                Text {
-                    text: modelData ? modelData.name : ""
-                    color: "#cccccc"
-                    font.pixelSize: page.dimsFactor * 6
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
-                Row {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: page.dimsFactor * 7
-                    Text {
-                        text: "Score  " + (modelData ? modelData.score : 0)
-                        color: "white"
-                        font.pixelSize: page.dimsFactor * 6
-                    }
-                    Text {
-                        text: "Level  " + (modelData ? modelData.level : 0)
-                        color: "white"
-                        font.pixelSize: page.dimsFactor * 6
-                    }
-                }
-            }
-        }
-    }
-
-    // "Game Over!" floats above the list — declared after ListView
-    Text {
-        text: "Game Over!"
-        color: "red"
-        font {
-            pixelSize: Math.round(page.dimsFactor * 8 * page.goScale)
-            bold: true
-        }
-        anchors {
-            top: parent.top
-            topMargin: page.dimsFactor * 6
-            horizontalCenter: parent.horizontalCenter
-        }
-    }
-
-    // "Die Again" button — declared last, MouseArea never covered
-    Rectangle {
-        id: tryAgainButton
-        width: Math.round(page.dimsFactor * 42 * page.goScale)
-        height: Math.round(page.dimsFactor * 14 * page.goScale)
-        color: "green"
-        border.color: "white"
-        border.width: Math.round(page.dimsFactor * 1 * page.goScale)
-        radius: Math.round(page.dimsFactor * 3 * page.goScale)
-        anchors {
-            bottom: parent.bottom
-            bottomMargin: page.dimsFactor * 8
-            horizontalCenter: parent.horizontalCenter
-        }
+    // Message, results and restart button: one block, centred vertically.
+    Column {
+        id: goBlock
+        anchors.centerIn: parent
+        width: parent.width
+        spacing: page.dimsFactor * 6
 
         Text {
-            text: "Die Again"
-            color: "white"
+            id: gameOverTitle
+            text: "Game Over!"
+            color: "red"
             font {
-                pixelSize: Math.round(page.dimsFactor * 6 * page.goScale)
+                pixelSize: Math.round(page.dimsFactor * 8 * page.goScale)
                 bold: true
             }
-            anchors.centerIn: parent
+            anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        MouseArea {
-            anchors.fill: parent
-            enabled: page.active
-            onClicked: page.restartClicked()
+        ListView {
+            id: goList
+            width: parent.width - page.dimsFactor * 30
+            anchors.horizontalCenter: parent.horizontalCenter
+            // as tall as its rows, as long as the block still fits the screen
+            height: Math.min(contentHeight,
+                             page.height - gameOverTitle.height - tryAgainButton.height
+                             - 2 * goBlock.spacing - page.dimsFactor * 20)
+            clip: true
+            interactive: contentHeight > height
+            model: page.model
+            spacing: 0
+
+            delegate: Item {
+                width: ListView.view ? ListView.view.width : 0
+                height: !modelData ? 0 :
+                        modelData.rowType === "header" ? page.dimsFactor * 12 : page.dimsFactor * 24
+
+                // Current run row
+                Column {
+                    visible: modelData && modelData.rowType === "current"
+                    anchors.centerIn: parent
+                    spacing: page.dimsFactor * 1
+
+                    Text {
+                        text: modelData ? modelData.name : ""
+                        color: "#dddddd"
+                        font { pixelSize: page.dimsFactor * 8; bold: true; family: "Fyodor" }
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: page.dimsFactor * 7
+                        Text {
+                            text: "Score  " + (modelData ? modelData.score : 0)
+                            color: "white"
+                            font.pixelSize: page.dimsFactor * 6
+                            font.bold: true
+                        }
+                        Text {
+                            text: "Level  " + (modelData ? modelData.level : 0)
+                            color: "white"
+                            font.pixelSize: page.dimsFactor * 6
+                            font.bold: true
+                        }
+                    }
+                }
+
+                // Highscore header row
+                Text {
+                    visible: modelData && modelData.rowType === "header"
+                    text: "Highscore"
+                    color: "#888888"
+                    font { pixelSize: page.dimsFactor * 8; family: "Fyodor" }
+                    anchors.centerIn: parent
+                }
+
+                // Historical difficulty row
+                Column {
+                    visible: modelData && modelData.rowType === "history"
+                    anchors.centerIn: parent
+                    spacing: page.dimsFactor * 1
+
+                    Text {
+                        text: modelData ? modelData.name : ""
+                        color: "#cccccc"
+                        font.pixelSize: page.dimsFactor * 6
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: page.dimsFactor * 7
+                        Text {
+                            text: "Score  " + (modelData ? modelData.score : 0)
+                            color: "white"
+                            font.pixelSize: page.dimsFactor * 6
+                        }
+                        Text {
+                            text: "Level  " + (modelData ? modelData.level : 0)
+                            color: "white"
+                            font.pixelSize: page.dimsFactor * 6
+                        }
+                    }
+                }
+            }
+        }
+
+        // "Die Again" button, declared last
+        Rectangle {
+            id: tryAgainButton
+            width: Math.round(page.dimsFactor * 42 * page.goScale)
+            height: Math.round(page.dimsFactor * 14 * page.goScale)
+            color: "green"
+            border.color: "white"
+            border.width: Math.round(page.dimsFactor * 0.7 * page.goScale)
+            radius: Math.round(page.dimsFactor * 3 * page.goScale)
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            Text {
+                text: "Die Again"
+                color: "white"
+                font {
+                    pixelSize: Math.round(page.dimsFactor * 6 * page.goScale)
+                    bold: true
+                }
+                anchors.centerIn: parent
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: page.active
+                onClicked: page.restartClicked()
+            }
         }
     }
 }

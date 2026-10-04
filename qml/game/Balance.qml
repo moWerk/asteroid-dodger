@@ -40,6 +40,10 @@ QtObject {
     readonly property int  spawnCooldownPerLevel: 2
     readonly property int  minSpawnCooldown: 100
 
+    // Asteroid size varies around 1.0 by this much in total:
+    // 0.6 gives sizes from 0.7 to 1.3 (it was 0.4, from 0.8 to 1.2).
+    readonly property real asteroidSizeSpread: 0.6
+
     // Power-up Global Density
     property real powerupDensityFactor: 0.001
 
