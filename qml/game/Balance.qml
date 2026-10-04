@@ -75,6 +75,11 @@ QtObject {
     readonly property int initialShield: 2
     readonly property int maxShield: 10
 
+    // SailfishOS tuning on top of the presets below, which stay as they
+    // are on the watch: fewer power-ups, faster speed-up per level.
+    readonly property real powerupDensityScale: 0.8
+    readonly property real scrollSpeedPerLevelScale: 1.2
+
     // ── Difficulty Presets ────────────────────────────────────────────────
     // Cadet = baseline. Each step raises scroll speed, asteroid density and
     // density-per-level linearly. Roadkill additionally has no invincibility
@@ -121,10 +126,10 @@ QtObject {
         var preset = difficultyPresets[name]
         if (!preset) preset = difficultyPresets["Cadet Swerver"]
         initialScrollSpeed      = preset.initialScrollSpeed
-        scrollSpeedPerLevel     = preset.scrollSpeedPerLevel
+        scrollSpeedPerLevel     = preset.scrollSpeedPerLevel * scrollSpeedPerLevelScale
         initialAsteroidDensity  = preset.initialAsteroidDensity
         asteroidDensityPerLevel = preset.asteroidDensityPerLevel
-        powerupDensityFactor    = preset.powerupDensityFactor
+        powerupDensityFactor    = preset.powerupDensityFactor * powerupDensityScale
         weightInvincibility     = preset.weightInvincibility
         return preset
     }

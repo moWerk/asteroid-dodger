@@ -131,7 +131,8 @@ Item {
             if (comboActive) {
                 comboMeterAnimation.pause()
             }
-            comboHitboxAnimation.pause()
+            // pausing an animation that is not running only earns a warning
+            if (comboHitboxAnimation.running) comboHitboxAnimation.pause()
         } else {
             scrollSpeed = savedScrollSpeed
             if (comboActive) {
