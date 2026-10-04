@@ -25,9 +25,9 @@ ApplicationWindow {
     allowedOrientations: Orientation.Portrait
 
     // The play field lives in the page while the app is in front. When the
-    // app goes to the background the game is paused and the same scene is
-    // moved into the cover, scaled down. The cover's action resumes it
-    // there, so the game can be played on the home screen.
+    // app goes to the background the same scene is moved into the cover,
+    // scaled down, and the round simply keeps running there: the game can
+    // be played on the home screen. The cover's action pauses and resumes.
     property Item stageItem: null
     property Item stageHome: null
     property Item coverHolder: null
@@ -46,11 +46,7 @@ ApplicationWindow {
         }
     }
 
-    onApplicationActiveChanged: {
-        if (!applicationActive && stageItem && stageItem.game)
-            stageItem.game.setPaused(true)
-        placeStage()
-    }
+    onApplicationActiveChanged: placeStage()
     onCoverHolderChanged: placeStage()
 
     initialPage: Component {
