@@ -15,16 +15,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <asteroidapp.h>
-#include <QtQml>
-#include "DodgerStorage.h"
+import QtQuick 2.6
+import "."
 
-int main(int argc, char *argv[])
-{
-    qmlRegisterSingletonType<DodgerStorage>(
-        "org.asteroid.dodger", 1, 0,
-        "DodgerStorage",
-        DodgerStorage::qmlInstance);
-
-    return AsteroidApp::main(argc, argv);
+// Stand-in for Label of org.asteroid.controls: white text.
+Text {
+    color: "#ffffff"
+    font.pixelSize: Dims.l(6)
 }

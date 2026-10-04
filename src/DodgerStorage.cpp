@@ -23,17 +23,17 @@ static DodgerStorage *s_instance = nullptr;
 
 DodgerStorage::DodgerStorage(QObject *parent)
     : QObject(parent)
-    // Explicit path avoids HOME ambiguity in the Lipstick session environment.
+    // SailfishOS: the per-app config directory, ~/.config/<org>/<app>/.
+    // It is the one an app may write to when it runs sandboxed.
     // QSettings creates the file on first sync() if it does not exist.
     , m_settings(
-        QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
-        + QStringLiteral("/.config/asteroid-dodger/game.ini"),
+        QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+        + QStringLiteral("/game.ini"),
         QSettings::IniFormat)
 {
     // Ensure the config directory exists before any write attempt.
     QDir().mkpath(
-        QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
-        + QStringLiteral("/.config/asteroid-dodger"));
+        QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
     s_instance = this;
 }
 

@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick
+import QtQuick 2.6
 
 // Game-over overlay: dimmed backdrop, current-run summary, sorted
 // per-difficulty leaderboard, restart button. Display-only — all state

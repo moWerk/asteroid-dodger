@@ -17,13 +17,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick
-import QtSensors
-import Nemo.Ngf
-import QtQuick.Shapes
-import org.asteroid.controls
-import org.asteroid.dodger
-import Nemo.KeepAlive
+import QtQuick 2.6
+import QtSensors 5.2
+import Nemo.Ngf 1.0
+import "."
+import org.asteroid.dodger 1.0
+import Nemo.KeepAlive 1.2
 
 Item {
     id: root
@@ -159,7 +158,8 @@ Item {
 
     NonGraphicalFeedback {
         id: feedback
-        event: "press"
+        // SailfishOS has no "press" event; "feedback_press" is its short tick
+        event: "feedback_press"
     }
 
     // KeepAlive 1.2 API: DisplayBlanking is instantiable, not a singleton.
@@ -733,25 +733,17 @@ Item {
                     ringColor: "#FF4400"
                 }
 
-                Shape {
+                // SailfishOS (Qt 5.6) has no QtQuick.Shapes. The hitbox is
+                // never drawn, only its geometry is used.
+                Item {
                     id: playerHitbox
                     width: dimsFactor * 14
                     height: dimsFactor * 14
                     anchors.centerIn: parent
                     visible: false
-
-                    ShapePath {
-                        strokeWidth: -1
-                        fillColor: "transparent"
-                        startX: dimsFactor * 7; startY: 0
-                        PathLine { x: dimsFactor * 14; y: dimsFactor * 7 }
-                        PathLine { x: dimsFactor * 7;  y: dimsFactor * 14 }
-                        PathLine { x: 0;               y: dimsFactor * 7 }
-                        PathLine { x: dimsFactor * 7;  y: 0 }
-                    }
                 }
 
-                Shape {
+                Item {
                     id: comboHitbox
                     width: dimsFactor * 40
                     height: dimsFactor * 40
@@ -759,15 +751,15 @@ Item {
                     visible: comboActive
                     opacity: 0.2
 
-                    ShapePath {
-                        strokeWidth: dimsFactor * 1
-                        strokeColor: "#00CC00"
-                        fillColor: "transparent"
-                        startX: dimsFactor * 20; startY: dimsFactor * 10
-                        PathLine { x: dimsFactor * 30; y: dimsFactor * 20 }
-                        PathLine { x: dimsFactor * 20; y: dimsFactor * 30 }
-                        PathLine { x: dimsFactor * 10; y: dimsFactor * 20 }
-                        PathLine { x: dimsFactor * 20; y: dimsFactor * 10 }
+                    // diamond = square rotated by 45 degrees
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: dimsFactor * 10 * Math.SQRT2
+                        height: width
+                        rotation: 45
+                        color: "transparent"
+                        border.width: dimsFactor * 1
+                        border.color: "#00CC00"
                     }
 
                     SequentialAnimation on opacity {
@@ -1122,7 +1114,7 @@ Item {
                 y: -height - (Math.random() * dimsFactor * 28)
                 visible: false
 
-                Shape {
+                Item {
                     id: asteroidShape
                     visible: type === "asteroid" && !dodged
                     property real sizeFactor: 0.8 + Math.random() * 0.4
@@ -1130,21 +1122,19 @@ Item {
                     height: dimsFactor * 3 * sizeFactor
                     anchors.centerIn: parent
 
-                    ShapePath {
-                        strokeWidth: -1
-                        fillColor: {
+                    // diamond = square rotated by 45 degrees
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: asteroidShape.width / Math.SQRT2
+                        height: width
+                        rotation: 45
+                        color: {
                             var base = 230
                             var delta = Math.round(base * 0.22)
                             var rand = Math.round(base - delta + Math.random() * (2 * delta))
                             rand = Math.max(179, Math.min(255, rand))
-                            var hex = rand.toString(16).padStart(2, '0')
-                            return "#" + hex + hex + hex + "ff"
+                            return Qt.rgba(rand / 255, rand / 255, rand / 255, 1)
                         }
-                        startX: asteroidShape.width * 0.5; startY: 0
-                        PathLine { x: asteroidShape.width;       y: asteroidShape.height * 0.5 }
-                        PathLine { x: asteroidShape.width * 0.5; y: asteroidShape.height }
-                        PathLine { x: 0;                         y: asteroidShape.height * 0.5 }
-                        PathLine { x: asteroidShape.width * 0.5; y: 0 }
                     }
                 }
 

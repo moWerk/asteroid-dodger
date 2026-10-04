@@ -15,8 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick
-import org.asteroid.dodger
+import QtQuick 2.6
+import org.asteroid.dodger 1.0
 
 // Pre-game flow: title, difficulty selection, calibration countdown and
 // the NOW/SURVIVE intro flashes. Display + one decision: the die-now tap
