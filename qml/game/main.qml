@@ -1248,7 +1248,11 @@ Item {
 
         Accelerometer {
             id: accelerometer
-            active: gameTimer.running
+            // Also on during calibration: the baseline is read at its end.
+            // With the sensor still off, SailfishOS 3.4 reports 0 there, so a
+            // normal hold read as a constant tilt and the ship stuck to the
+            // right edge (Jolla 1, found by the author).
+            active: gameTimer.running || calibrating
         }
     }
 

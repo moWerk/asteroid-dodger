@@ -1,6 +1,6 @@
 Name:       harbour-asteroid-dodger
 Summary:    Dodger, a tilt controlled dodging game
-Version:    2.0.1
+Version:    2.0.2
 Release:    1
 License:    GPLv3+
 URL:        https://github.com/moWerk/asteroid-dodger
