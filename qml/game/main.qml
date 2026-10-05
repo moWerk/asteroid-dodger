@@ -19,7 +19,7 @@
 
 import QtQuick 2.6
 import QtSensors 5.2
-import Nemo.Ngf 1.0
+import QtFeedback 5.0
 import "."
 import org.asteroid.dodger 1.0
 import Nemo.KeepAlive 1.2
@@ -172,10 +172,11 @@ Item {
         }
     }
 
-    NonGraphicalFeedback {
+    // Haptics through QtFeedback's ThemeEffect: Nemo.Ngf is not allowed in
+    // the Jolla Store, ThemeEffect with Press* is.
+    ThemeEffect {
         id: feedback
-        // SailfishOS has no "press" event; "feedback_press" is its short tick
-        event: "feedback_press"
+        effect: ThemeEffect.Press
     }
 
     // KeepAlive 1.2 API: DisplayBlanking is instantiable, not a singleton.
