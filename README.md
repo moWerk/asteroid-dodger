@@ -46,10 +46,12 @@ does not carry over as it is.
 
 Download the RPM from the releases page and install it:
 
-    devel-su pkcon install-local harbour-asteroid-dodger-2.0.0-1.aarch64.rpm
+    devel-su pkcon install-local harbour-asteroid-dodger-2.0.1-1.aarch64.rpm
 
-It is aarch64 only. The app runs without sandboxing, so it is for
-sideloading and not a store build. Highscores are stored in
+It is aarch64 only. The app runs in the SailfishOS sandbox with the
+Sensors permission: the first start from the app grid asks once to allow
+it. Without it the tilt control does not work. The Jolla Store does not
+allow that permission, so this is for Chum and sideloading. Highscores are stored in
 `~/.config/net.mowerk/harbour-asteroid-dodger/game.ini`.
 
 ### Build
