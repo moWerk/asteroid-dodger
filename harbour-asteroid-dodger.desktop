@@ -2,7 +2,7 @@
 Type=Application
 X-Nemo-Application-Type=silica-qt5
 Icon=harbour-asteroid-dodger
-Exec=harbour-asteroid-dodger
+Exec=sailfish-qml harbour-asteroid-dodger
 Name=Dodger
 Comment=A tilt controlled dodging game
 

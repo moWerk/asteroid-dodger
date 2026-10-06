@@ -1,1 +1,2 @@
 singleton Dims 1.0 Dims.qml
+singleton DodgerStorage 1.0 DodgerStorage.qml

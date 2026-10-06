@@ -21,7 +21,6 @@ import QtQuick 2.6
 import QtSensors 5.2
 import QtFeedback 5.0
 import "."
-import org.asteroid.dodger 1.0
 import Nemo.KeepAlive 1.2
 
 Item {
