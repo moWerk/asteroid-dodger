@@ -10,6 +10,8 @@ into a playground of skill and reflexes.
 
 ## SailfishOS
 
+Reviewing the code? Start with [review-and-architecture-hints.md](review-and-architecture-hints.md).
+
 This branch is the SailfishOS version of the game. It is built for
 Sailfish OS 5.1 on aarch64 and was played on a Jolla C2. The game itself
 is the 2.0 watch version described below. This section lists what is
