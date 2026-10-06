@@ -7,8 +7,10 @@ Name=Dodger
 Comment=A tilt controlled dodging game
 
 [X-Sailjail]
-# Sandboxed. The game reads the accelerometer (Sensors) and writes only
-# its own config directory, ~/.config/net.mowerk/harbour-asteroid-dodger/.
+# Sandboxed. The game reads the accelerometer and keeps its scores in dconf
+# (/apps/harbour-asteroid-dodger). Camera, not Sensors: the Jolla Store does
+# not allow Sensors, and SailfishOS's Camera permission includes it (see
+# /etc/sailjail/permissions/Camera.permission). The camera is never used.
 OrganizationName=net.mowerk
 ApplicationName=harbour-asteroid-dodger
-Permissions=Sensors
+Permissions=Camera

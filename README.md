@@ -193,3 +193,14 @@ the Jolla Tablet (4.6) and a Jolla 1 (3.4).
 Disclosure: LLMGD-3 · origin O1 (idea from a forum reply and the author's go; LLM-converted; start-checked by log on three devices; self-graded)
 LLMGD: v0.2; assurance=A3; flags=T; origin={O0:.7,O1:.3}; origin_headline=O0; scope=packaging+code; graded-by=claude-opus-5-5; retrieval=author-side
 ```
+
+### Why it asks for the camera
+
+On first start the app asks to use the **camera**. It never uses it. It
+needs the accelerometer, and the Jolla Store does not allow the Sensors
+permission that would say so; SailfishOS's Camera permission includes
+sensor access, so that is the one a store app can ask for. App developer
+poetaster pointed this out in the forum (his spirit level does the same),
+and a sandboxed test on a Jolla C2 confirmed that the tilt works with
+only Camera. With Sensors, the store's validator rejected the game; with
+Camera, nothing else stands in the way.
