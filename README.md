@@ -75,7 +75,7 @@ and said how it should be. The model located the causes and wrote the
 code. He has not read the port's code. It was tested on one phone.
 
 ```
-Disclosure: LLMGD-3 · origin O1 (human-directed port, LLM-written; played and steered by the author on one Jolla C2; code not read; self-graded)
+Disclosure: LLMGD-3 · origin O1 (author-directed port, LLM-written; played and steered by the author on one Jolla C2; code not read; self-graded)
 LLMGD: v0.2; assurance=A3; flags=U,T; origin={O0:.45,O1:.55}; origin_headline=O1; scope=port(code+assets+packaging+docs); graded-by=claude-fable-5-1; retrieval=author-side
 ```
 
