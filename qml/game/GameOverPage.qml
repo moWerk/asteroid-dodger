@@ -106,6 +106,11 @@ Item {
                         color: "#dddddd"
                         font { pixelSize: page.dimsFactor * 8; bold: true; family: "Fyodor" }
                         anchors.horizontalCenter: parent.horizontalCenter
+                        // long names shrink to the list's width instead of being clipped
+                        width: goList.width
+                        horizontalAlignment: Text.AlignHCenter
+                        fontSizeMode: Text.HorizontalFit
+                        minimumPixelSize: page.dimsFactor * 4
                     }
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
