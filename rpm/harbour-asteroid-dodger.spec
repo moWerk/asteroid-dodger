@@ -23,6 +23,28 @@ BuildRequires:  desktop-file-utils
 Dodger is a game where you tilt the device to steer through a field of
 falling asteroids. Ported from AsteroidOS.
 
+%if 0%{?_chum}
+Title: Dodger
+Type: desktop-application
+DeveloperName: moWerk
+Categories:
+ - Game
+ - ArcadeGame
+ - ActionGame
+Custom:
+  Repo: https://github.com/moWerk/asteroid-dodger
+PackageIcon: https://raw.githubusercontent.com/moWerk/asteroid-dodger/sailfishos/store/icon-172x172.png
+AIRating: V
+AINote: The SailfishOS port was written by an LLM (Claude), directed and play-tested by the author on real devices; every commit carries an LLMGD disclosure line (see the README). The title art is AI-generated.
+Screenshots:
+ - https://raw.githubusercontent.com/moWerk/asteroid-dodger/sailfishos/store/screenshot-start-1080x2400.jpg
+ - https://raw.githubusercontent.com/moWerk/asteroid-dodger/sailfishos/store/screenshot-action-1080x2400.jpg
+ - https://raw.githubusercontent.com/moWerk/asteroid-dodger/sailfishos/store/screenshot-gameover-1080x2400.jpg
+Links:
+  Homepage: https://github.com/moWerk/asteroid-dodger/tree/sailfishos
+  Bugtracker: https://github.com/moWerk/asteroid-dodger/issues
+%endif
+
 %prep
 %setup -q -n %{name}-%{version}
 
