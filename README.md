@@ -12,12 +12,19 @@ into a playground of skill and reflexes.
 
 Reviewing the code? Start with [review-and-architecture-hints.md](review-and-architecture-hints.md).
 
-This branch is the SailfishOS version of the game. It is built for
-Sailfish OS 5.1 on aarch64 and was played on a Jolla C2. The game itself
+This branch is the SailfishOS version of the game. It is plain QML, so
+one noarch package runs on Sailfish OS 3.4 and later. It was played on a
+Jolla C2. The game itself
 is the 2.0 watch version described below. This section lists what is
 different.
 
 ### Only on SailfishOS
+
+- **Title and game over art** (2.2): the title screen shows cover art,
+  with the title at the top and the controls at the bottom; the game over
+  screen shows it dimmed to half. The art is AI-generated (see
+  `qml/game/img/README`). The difficulty name sits on a grey plate so the
+  slim font reads on the art; it darkens while pressed.
 
 - **Power-up callout**: collecting a power-up shouts its name below the
   HUD, in the power-up's colour. Two quick pumps, then it dissolves.
@@ -48,13 +55,13 @@ does not carry over as it is.
 
 Download the RPM from the releases page and install it:
 
-    devel-su pkcon install-local harbour-asteroid-dodger-2.0.2-1.aarch64.rpm
+    devel-su pkcon install-local harbour-asteroid-dodger-2.2.0-1.noarch.rpm
 
-It is aarch64 only. The app runs in the SailfishOS sandbox with the
-Sensors permission: the first start from the app grid asks once to allow
-it. Without it the tilt control does not work. The Jolla Store does not
-allow that permission, so this is for Chum and sideloading. Highscores are stored in
-`~/.config/net.mowerk/harbour-asteroid-dodger/game.ini`.
+The app runs in the SailfishOS sandbox with the Camera permission, which
+on SailfishOS includes the motion sensors; the camera is never used. The
+first start from the app grid asks once to allow it. Without it the tilt
+control does not work. The package passes Jolla's store validator.
+Highscores are stored in dconf under `/apps/harbour-asteroid-dodger`.
 
 ### Build
 
@@ -149,7 +156,7 @@ four tiers.
 
 AsteroidOS 2.0 — Qt 5.15 (master branch)
 
-Sailfish OS 5.1, aarch64, Qt 5.6 (this branch)
+Sailfish OS 3.4 or later, Qt 5.6, any architecture (this branch)
 
 ## Disclosure
 
