@@ -17,8 +17,8 @@
 
 import QtQuick 2.6
 
-// Stand-in for HighlightBar of org.asteroid.controls: a press highlight
-// that fills its parent and reports clicks.
+// Stand-in for HighlightBar of org.asteroid.controls: a backing plate with
+// a press highlight that fills its parent and reports clicks.
 Item {
     id: bar
 
@@ -30,9 +30,11 @@ Item {
     Rectangle {
         id: highlight
         anchors.fill: parent
-        color: "#ffffff"
-        opacity: mouse.pressed ? 0.2 : 0
-        Behavior on opacity { NumberAnimation { duration: 100 } }
+        // SailfishOS: always a grey plate, so the slim font stays readable on
+        // the cover art; darker while pressed.
+        color: mouse.pressed ? "#1a1a1a" : "#4a4a4a"
+        opacity: 0.7
+        Behavior on color { ColorAnimation { duration: 100 } }
     }
 
     MouseArea {

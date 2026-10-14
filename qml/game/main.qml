@@ -1011,6 +1011,7 @@ Item {
                 calibrationTimer: root.calibrationTimer
                 showingNow: root.showingNow
                 showingSurvive: root.showingSurvive
+                version: "v2.2"
                 onDieNowClicked: function(difficultyName) {
                     applyDifficulty(difficultyName)
                     root.calibrationTimer = 2

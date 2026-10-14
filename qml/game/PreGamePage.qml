@@ -18,7 +18,7 @@
 import QtQuick 2.6
 import "."
 
-// Pre-game flow: title, difficulty selection, calibration countdown and
+// Pre-game flow: cover art, title, difficulty selection, calibration countdown and
 // the NOW/SURVIVE intro flashes. Display + one decision: the die-now tap
 // emits dieNowClicked(name); all difficulty/calibration state transitions
 // stay in main.qml. playNow()/playSurvive()/stopIntros() are driven by
@@ -34,6 +34,7 @@ Item {
     property int  calibrationTimer: 0
     property bool showingNow: false
     property bool showingSurvive: false
+    property string version: ""
 
     signal dieNowClicked(string difficultyName)
 
@@ -41,31 +42,43 @@ Item {
     function playSurvive() { surviveTransition.start() }
     function stopIntros()  { nowTransition.stop(); surviveTransition.stop() }
 
-    // Title, difficulty selection or calibration, start button: one block,
-    // centred vertically. A phone screen is tall, a watch is not.
+    readonly property bool shown: calibrating || selectingDifficulty
+
+    // SailfishOS: cover art (AI-generated with Grok from the author's prompt;
+    // see img/README). Its trail runs through the middle, so the title keeps
+    // to the top and the controls to the bottom. It fades with the NOW flash.
+    Image {
+        anchors.fill: parent
+        source: "img/title-art.jpg"
+        fillMode: Image.PreserveAspectCrop
+        visible: opacity > 0
+        opacity: shown && !showingNow ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.InOutQuad } }
+    }
+
+    Text {
+        id: titleText
+        text: "Asteroid\nDodger"
+        color: "#dddddd"
+        visible: shown
+        opacity: showingNow ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.InOutQuad } }
+        lineHeightMode: Text.ProportionalHeight
+        lineHeight: 0.8
+        font { family: "Fyodor"; pixelSize: dimsFactor * 22 }
+        anchors { top: parent.top; topMargin: parent.height * 0.06; horizontalCenter: parent.horizontalCenter }
+        horizontalAlignment: Text.AlignHCenter
+        z: 4
+    }
+
+    // Difficulty selection or calibration, start button: one block at the bottom.
     Column {
         id: startBlock
-        anchors.centerIn: parent
+        anchors { bottom: parent.bottom; bottomMargin: parent.height * 0.08; horizontalCenter: parent.horizontalCenter }
         width: parent.width
         spacing: dimsFactor * 10
         z: 4
-        visible: calibrating || selectingDifficulty
-
-        Text {
-            id: titleText
-            text: "v2.0\nAsteroid Dodger"
-            color: "#dddddd"
-            font {
-                family: "Fyodor"
-                pixelSize: dimsFactor * 15
-            }
-            anchors.horizontalCenter: parent.horizontalCenter
-            horizontalAlignment: Text.AlignHCenter
-            // never wider than the screen
-            width: page.width - dimsFactor * 8
-            fontSizeMode: Text.HorizontalFit
-            minimumPixelSize: dimsFactor * 6
-        }
+        visible: shown
 
         Column {
             id: difficultySelector
@@ -144,6 +157,25 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
         }
+    }
+
+    Text {
+        text: version
+        color: "#888888"
+        font.pixelSize: dimsFactor * 3.5
+        visible: shown
+        opacity: showingNow ? 0 : 1
+        anchors { left: parent.left; leftMargin: dimsFactor * 3; bottom: parent.bottom; bottomMargin: dimsFactor * 2 }
+        z: 4
+    }
+    Text {
+        text: "by moWerk"
+        color: "#888888"
+        font.pixelSize: dimsFactor * 3.5
+        visible: shown
+        opacity: showingNow ? 0 : 1
+        anchors { right: parent.right; rightMargin: dimsFactor * 3; bottom: parent.bottom; bottomMargin: dimsFactor * 2 }
+        z: 4
     }
 
     Text {

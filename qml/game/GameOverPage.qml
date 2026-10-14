@@ -17,7 +17,7 @@
 
 import QtQuick 2.6
 
-// Game-over overlay: dimmed backdrop, current-run summary, sorted
+// Game-over overlay: the cover art dimmed to half, current-run summary, sorted
 // per-difficulty leaderboard, restart button. Display-only — all state
 // arrives through the four properties; the single write-back is the
 // restartClicked signal.
@@ -48,7 +48,14 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: "black"
-        opacity: 0.72
+    }
+
+    // SailfishOS: the cover art, dimmed to half (see the title screen)
+    Image {
+        anchors.fill: parent
+        source: "img/title-art.jpg"
+        fillMode: Image.PreserveAspectCrop
+        opacity: 0.5
     }
 
     // Scrollable results list

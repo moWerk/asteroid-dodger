@@ -46,6 +46,7 @@ Item {
     // corner radius per side, so the rounded ends lie fully outside the
     // width that word-wraps long difficulty names.
     HighlightBar {
+        z: -1           // the plate goes behind the text
         anchors.fill: undefined
         anchors.centerIn: parent
         width: parent.width + 2 * radius
